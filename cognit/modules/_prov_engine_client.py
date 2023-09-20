@@ -26,7 +26,7 @@ class ProvEngineClient:
 
         """
         self.config = config
-        self.endpoint = "https://{0}:{1}".format(
+        self.endpoint = "http://{0}:{1}".format(
             self.config.prov_engine_endpoint, self.config.prov_engine_port
         )
 

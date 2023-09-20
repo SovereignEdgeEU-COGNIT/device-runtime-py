@@ -6,13 +6,14 @@ sys.path.append("../")
 
 import time
 
-from cognit import (
-    EnergySchedulingPolicy,
+from cognit.models._prov_engine_client import (
     FaaSState,
+)
+from cognit.serverless_runtime_context import (
+    EnergySchedulingPolicy,
     ServerlessRuntimeConfig,
     ServerlessRuntimeContext,
 )
-
 
 def sum(a: int, b: int):
     return a + b
