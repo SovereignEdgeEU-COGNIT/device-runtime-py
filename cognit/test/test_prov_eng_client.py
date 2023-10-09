@@ -16,7 +16,7 @@ TEST_RESPONSE_PENDING = {
         "DISK_SIZE": 1,
         "FLAVOUR": "flavour",
         "ENDPOINT": "endpoint",
-        "STATE": "pending",
+        "STATE": "PENDING",
         "VM_ID": "vm_id",
     },
     "DAAS": {
@@ -81,7 +81,7 @@ def prov_eng_cli(test_cognit_config: CognitConfig) -> ProvEngineClient:
 
 @pytest.fixture
 def test_serverless_runtime() -> ServerlessRuntime:
-    return ServerlessRuntime(
+    sr_data = ServerlessRuntimeData(
         NAME="MyServerlessRuntime",
         ID=1,
         FLAVOUR="Flavor 1",
@@ -90,6 +90,7 @@ def test_serverless_runtime() -> ServerlessRuntime:
         POLICY="energy",
         REQUIREMENTS="energy_renewal",
     )
+    return ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
 
 def test_prov_engine_cli_create(
@@ -106,7 +107,7 @@ def test_prov_engine_cli_create(
 
     response = prov_eng_cli.create(serverless_runtime=test_serverless_runtime)
     assert response != None
-    assert response.FAAS.STATE == FaaSState.PENDING
+    assert response.SERVERLESS_RUNTIME.FAAS.STATE == FaaSState.PENDING
 
 
 def test_prov_engine_cli_retrieve(
@@ -119,8 +120,8 @@ def test_prov_engine_cli_retrieve(
     mocker.patch("requests.get", return_value=mock_resp)
     response = prov_eng_cli.retrieve(1)
     assert response != None
-    assert response.FAAS.STATE == FaaSState.RUNNING
-    assert response.FAAS.ENDPOINT == TEST_SR_ENDPOINT
+    assert response.SERVERLESS_RUNTIME.FAAS.STATE == FaaSState.RUNNING
+    assert response.SERVERLESS_RUNTIME.FAAS.ENDPOINT == TEST_SR_ENDPOINT
 
 
 def test_prov_engine_cli_delete(prov_eng_cli: ProvEngineClient, mocker: MockerFixture):

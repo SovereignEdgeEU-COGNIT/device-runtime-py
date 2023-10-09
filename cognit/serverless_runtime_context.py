@@ -263,7 +263,7 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.FAAS.ENDPOINT == None:
+            if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -273,7 +273,7 @@ class ServerlessRuntimeContext:
                     exec_id="0",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
 
         parser = FaasParser()
 
@@ -312,7 +312,7 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.FAAS.ENDPOINT == None:
+            if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -322,7 +322,7 @@ class ServerlessRuntimeContext:
                     exec_id="000-000-000",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
 
         parser = FaasParser()
 

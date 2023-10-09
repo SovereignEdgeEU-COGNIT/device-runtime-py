@@ -14,7 +14,8 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     _summary_: Fixture that returns a ServerlessRuntimeContext object already requested with id 42
     """
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -42,7 +43,8 @@ def test_ready_sr_ctx(mocker: MockerFixture):
 
     # The first time we request the SR, must be pending
     f = FaaSConfig(STATE=FaaSState.PENDING, ENDPOINT=TEST_SR_ENDPOINT)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -61,7 +63,7 @@ def test_ready_sr_ctx(mocker: MockerFixture):
 
     # After a call to status, the SR must be running
     # We mock the retrieve method to return a running SR
-    sr.FAAS.STATE = FaaSState.RUNNING
+    sr.SERVERLESS_RUNTIME.FAAS.STATE = FaaSState.RUNNING
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -78,7 +80,8 @@ def test_sr_ctx_create(mocker: MockerFixture):
 
     # Return a pending SR
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -102,7 +105,8 @@ def test_sr_ctx_status(
 ):
     # First should reutrn pending status
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    pending_sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    pending_sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    pending_sr = ServerlessRuntime(SERVERLESS_RUNTIME=pending_sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -116,7 +120,8 @@ def test_sr_ctx_status(
         STATE=FaaSState.RUNNING,
         ENDPOINT=TEST_SR_ENDPOINT,
     )
-    running_sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    running_sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    running_sr = ServerlessRuntime(SERVERLESS_RUNTIME=running_sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -210,7 +215,7 @@ def test_sr_ctx_delete(
     mock_src_delete.status_code = 200
 
     mocker.patch("requests.delete", return_value=mock_src_delete)
-    test_ready_sr_ctx.delete(12345)
+    test_ready_sr_ctx.delete()
 
     # TODO: How to test that an SR is deleted within an unitary test
     # with no interaction with PE
