@@ -10,3 +10,4 @@ cognit/pyvenv.cfg
 *-env
 dist
 .coverage
+cognit.yml

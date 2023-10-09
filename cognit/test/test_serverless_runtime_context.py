@@ -25,7 +25,9 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(
+        config_path="./config/cognit.yml"
+    )
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -51,7 +53,9 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(
+        config_path="./config/cognit.yml"
+    )
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -85,7 +89,9 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(
+        config_path="./config/cognit.yml"
+    )
 
     ret = my_cognit_runtime.create(sr_conf)
     assert ret == StatusCode.SUCCESS
@@ -121,7 +127,9 @@ def test_sr_ctx_status(
 
 
 def test_sr_ctx_status_no_init():
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(
+        config_path="./config/cognit.yml"
+    )
     assert my_cognit_runtime.status == None
 
 
@@ -135,7 +143,7 @@ def test_sr_ctx_call_sync(
     # Mock the response of a sync function offloading
     mock_resp = mocker.Mock()
     mock_resp.json.return_value = {
-        "result": "gAWVDAAAAAAAAAAoSwBLAUsCSwN0lC4=",
+        "res": "gAWVDAAAAAAAAAAoSwBLAUsCSwN0lC4=",
         "code": 201,
     }
 
@@ -143,7 +151,8 @@ def test_sr_ctx_call_sync(
     mocker.patch("requests.post", return_value=mock_resp)
 
     status = test_ready_sr_ctx.call_sync(dummy_func, 2, 3, 4)
-    assert status == ExecResponse()
+#    assert status == ExecResponse()
+    assert status.res == (0, 1, 2, 3)
 
 
 def test_sr_ctx_call_async(
