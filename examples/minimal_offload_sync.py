@@ -2,7 +2,7 @@
 # If you installed cognit with pip, you can remove this
 import sys
 
-sys.path.append("../")
+sys.path.append(".")
 
 import time
 
@@ -26,7 +26,7 @@ sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
 
 # Request the creation of the serverless runtime to the Cognit provisioning engine
 try:
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path="./examples/cognit.yml")
     ret = my_cognit_runtime.create(sr_conf)
 except Exception as e:
     print("Error: {}".format(e))
@@ -45,3 +45,7 @@ print("Cognit runtime ready!")
 result = my_cognit_runtime.call_sync(sum, 2, 2)
 
 print("Offloaded function result", result)
+
+my_cognit_runtime.delete() # Fill in with the ID of your created Serverless Runtime
+
+print("Cognit runtime deleted!")

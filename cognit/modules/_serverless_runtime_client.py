@@ -49,7 +49,7 @@ class ServerlessRuntimeClient:
             cognit_logger.warning("Faas execute sync payload: {}".format(payload))
             # Return the status code of the response
             if response == None:
-                return ExecResponse(ret_code=ExecReturnCode.ERROR)
+                return ExecResponse(ret_code=ExecReturnCode.ERROR, err=r.status_code)
             else:
                 return response
         except Exception as e:
@@ -81,6 +81,12 @@ class ServerlessRuntimeClient:
                 response = pydantic.parse_obj_as(AsyncExecResponse, r.json())
                 # Return the status code of the response
                 return response
+            elif r.status_code == 400:
+                return AsyncExecResponse(
+                    status=AsyncExecStatus.FAILED,
+                    exec_id=AsyncExecId(faas_task_uuid="000-000-000"),
+                    res=ExecResponse(ret_code=ExecReturnCode.ERROR),
+                )
             else:
                 return AsyncExecResponse(
                     status=AsyncExecStatus.READY,
@@ -94,7 +100,7 @@ class ServerlessRuntimeClient:
             return AsyncExecResponse(
                 status=AsyncExecStatus.READY,
                 res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                exec_id=AsyncExecId(faas_task_uuid="0"),
+                exec_id=AsyncExecId(faas_task_uuid="000-000-000"),
             )
 
     def wait(self, Id: str) -> AsyncExecResponse:
@@ -117,7 +123,10 @@ class ServerlessRuntimeClient:
             response = None
             if r.status_code == 200:
                 response = pydantic.parse_obj_as(AsyncExecResponse, r.json())
-
+            
+            if r.status_code == 400:
+                response = pydantic.parse_obj_as(AsyncExecResponse, r.json())
+            
             # Return the status code of the response
             return response
         except Exception as e:
@@ -131,5 +140,5 @@ class ServerlessRuntimeClient:
             return AsyncExecResponse(
                 status=AsyncExecStatus.READY,
                 res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                exec_id=AsyncExecId(faas_task_uuid="0"),
+                exec_id=AsyncExecId(faas_task_uuid="000-000-000"),
             )
