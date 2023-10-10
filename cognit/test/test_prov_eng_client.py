@@ -7,69 +7,73 @@ from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._prov_engine_client import ProvEngineClient
 
 TEST_RESPONSE_PENDING = {
-    "NAME": "faas",
-    "ID": 1,
-    "SERVICE_ID": 1,
-    "FAAS": {
-        "CPU": 1,
-        "MEMORY": 1,
-        "DISK_SIZE": 1,
-        "FLAVOUR": "flavour",
-        "ENDPOINT": "endpoint",
-        "STATE": "PENDING",
-        "VM_ID": "vm_id",
-    },
-    "DAAS": {
-        "CPU": 1,
-        "MEMORY": 1,
-        "DISK_SIZE": 1,
-        "FLAVOUR": "flavour",
-        "ENDPOINT": "",
-        "STATE": "",
-        "VM_ID": "vm_id",
-    },
-    "SCHEDULING": {"POLICY": "policy", "REQUIREMENTS": "requirements"},
-    "DEVICE_INFO": {
-        "LATENCY_TO_PE": 1,
-        "GEOGRAPHIC_LOCATION": "geographic_location",
-    },
+    "SERVERLESS_RUNTIME": {
+        "NAME": "faas",
+        "ID": 1,
+        "SERVICE_ID": 1,
+        "FAAS": {
+            "CPU": 1,
+            "MEMORY": 1,
+            "DISK_SIZE": 1,
+            "FLAVOUR": "flavour",
+            "ENDPOINT": "endpoint",
+            "STATE": "PENDING",
+            "VM_ID": "vm_id",
+        },
+        "DAAS": {
+            "CPU": 1,
+            "MEMORY": 1,
+            "DISK_SIZE": 1,
+            "FLAVOUR": "flavour",
+            "ENDPOINT": "",
+            "STATE": "",
+            "VM_ID": "vm_id",
+        },
+        "SCHEDULING": {"POLICY": "policy", "REQUIREMENTS": "requirements"},
+        "DEVICE_INFO": {
+            "LATENCY_TO_PE": 1,
+            "GEOGRAPHIC_LOCATION": "geographic_location",
+        }
+    }
 }
 
 TEST_SR_ENDPOINT = "http://myserverlessruntime-1234"
 
 TEST_RESPONSE_RUNNING = {
-    "NAME": "faas",
-    "ID": 1,
-    "SERVICE_ID": 1,
-    "FAAS": {
-        "CPU": 1,
-        "MEMORY": 1,
-        "DISK_SIZE": 1,
-        "FLAVOUR": "flavour",
-        "ENDPOINT": TEST_SR_ENDPOINT,
-        "STATE": "running",
-        "VM_ID": "vm_id",
-    },
-    "DAAS": {
-        "CPU": 1,
-        "MEMORY": 1,
-        "DISK_SIZE": 1,
-        "FLAVOUR": "flavour",
-        "ENDPOINT": "",
-        "STATE": "running",
-        "VM_ID": "vm_id",
-    },
-    "SCHEDULING": {"POLICY": "policy", "REQUIREMENTS": "requirements"},
-    "DEVICE_INFO": {
-        "LATENCY_TO_PE": 1,
-        "GEOGRAPHIC_LOCATION": "geographic_location",
-    },
+    "SERVERLESS_RUNTIME": {
+        "NAME": "faas",
+        "ID": 1,
+        "SERVICE_ID": 1,
+        "FAAS": {
+            "CPU": 1,
+            "MEMORY": 1,
+            "DISK_SIZE": 1,
+            "FLAVOUR": "flavour",
+            "ENDPOINT": TEST_SR_ENDPOINT,
+            "STATE": "RUNNING",
+            "VM_ID": "vm_id",
+        },
+        "DAAS": {
+            "CPU": 1,
+            "MEMORY": 1,
+            "DISK_SIZE": 1,
+            "FLAVOUR": "flavour",
+            "ENDPOINT": "",
+            "STATE": "running",
+            "VM_ID": "vm_id",
+        },
+        "SCHEDULING": {"POLICY": "policy", "REQUIREMENTS": "requirements"},
+        "DEVICE_INFO": {
+            "LATENCY_TO_PE": 1,
+            "GEOGRAPHIC_LOCATION": "geographic_location",
+        }
+    }
 }
 
 
 @pytest.fixture
 def test_cognit_config() -> CognitConfig:
-    config = CognitConfig("./config/cognit.yml")
+    config = CognitConfig("./cognit/test/config/cognit.yml")
     return config
 
 
@@ -100,7 +104,6 @@ def test_prov_engine_cli_create(
 ):
     # Patch request post to return status_CODE 200 and a body with serverless runtime details
     mock_resp = mocker.Mock()
-    # mock_resp.json.return_value = {"success": True}
     mock_resp.json.return_value = TEST_RESPONSE_PENDING
     mock_resp.status_code = 201
     mocker.patch("requests.post", return_value=mock_resp)

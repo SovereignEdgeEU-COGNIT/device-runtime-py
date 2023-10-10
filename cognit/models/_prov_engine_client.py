@@ -118,6 +118,8 @@ class ServerlessRuntimeData(BaseModel):
 
 class ServerlessRuntime(BaseModel):
     SERVERLESS_RUNTIME: ServerlessRuntimeData = Field(
+        # TODO: DEVICE_INFO and SCHEDULING should not be hardcoded to empty. Next commented example should be implemented.
+        #ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
         ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()),
         description="Serverless Runtime object"
     )

@@ -27,7 +27,7 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
     my_cognit_runtime = ServerlessRuntimeContext(
-        config_path="./config/cognit.yml"
+        config_path="./cognit/test/config/cognit.yml"
     )
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -56,7 +56,7 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
     my_cognit_runtime = ServerlessRuntimeContext(
-        config_path="./config/cognit.yml"
+        config_path="./cognit/test/config/cognit.yml"
     )
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -81,7 +81,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     # Return a pending SR
     f = FaaSConfig(STATE=FaaSState.PENDING)
     sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
-    sr = ServerlessRuntime(sr_data)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -93,7 +93,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
     my_cognit_runtime = ServerlessRuntimeContext(
-        config_path="./config/cognit.yml"
+        config_path="./cognit/test/config/cognit.yml"
     )
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -133,7 +133,7 @@ def test_sr_ctx_status(
 
 def test_sr_ctx_status_no_init():
     my_cognit_runtime = ServerlessRuntimeContext(
-        config_path="./config/cognit.yml"
+        config_path="./cognit/test/config/cognit.yml"
     )
     assert my_cognit_runtime.status == None
 
