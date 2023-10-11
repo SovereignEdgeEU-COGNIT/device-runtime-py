@@ -70,10 +70,11 @@ TEST_RESPONSE_RUNNING = {
     }
 }
 
+COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
 
 @pytest.fixture
 def test_cognit_config() -> CognitConfig:
-    config = CognitConfig("./cognit/test/config/cognit.yml")
+    config = CognitConfig(COGNIT_CONF_PATH)
     return config
 
 

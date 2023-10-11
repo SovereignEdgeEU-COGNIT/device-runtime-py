@@ -6,13 +6,11 @@ sys.path.append(".")
 
 import time
 
-from cognit.models._prov_engine_client import (
-    FaaSState,
-)
-from cognit.serverless_runtime_context import (
+from cognit import (
     EnergySchedulingPolicy,
     ServerlessRuntimeConfig,
     ServerlessRuntimeContext,
+    FaaSState,
 )
 
 def sum(a: int, b: int):
@@ -35,6 +33,7 @@ except Exception as e:
 
 # Wait until the runtime is ready
 
+#my_cognit_runtime.status
 while my_cognit_runtime.status != FaaSState.RUNNING:
     time.sleep(1)
 

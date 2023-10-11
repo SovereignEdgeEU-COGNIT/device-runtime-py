@@ -14,6 +14,8 @@ from cognit.serverless_runtime_context import (
 from cognit.modules._logger import CognitLogger
 cognit_logger = CognitLogger()
 
+COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
+
 TEST_RESPONSE_PENDING = {
     "NAME": "faas",
     "ID": 1,
@@ -77,13 +79,13 @@ TEST_RESPONSE_RUNNING = {
 
 @pytest.fixture
 def test_cognit_config() -> CognitConfig:
-    config = CognitConfig("./config/cognit.yml")
+    config = CognitConfig(COGNIT_CONF_PATH)
     return config
 
 
 @pytest.fixture
 def sr_context(test_cognit_config: CognitConfig) -> ServerlessRuntimeContext:
-    my_cognit = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     return my_cognit
 
 def test_prov_engine_create(

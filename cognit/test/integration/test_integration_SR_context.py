@@ -4,15 +4,6 @@ import logging
 import sys
 import time
 
-#sys.path.append('../../')
-
-#from cognit.modules import _prov_engine_client as pec
-#from cognit.modules import _serverless_runtime_client as c
-pec = __import__('cognit.modules._prov_engine_client')
-c = __import__('cognit.modules._serverless_runtime_client')
-
-# from cognit.modules._prov_engine_client import ProvEngineClient
-# from cognit.modules._serverless_runtime_client import ServerlessRuntimeClient
 from cognit.serverless_runtime_context import *
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._serverless_runtime_client import (
@@ -31,6 +22,8 @@ from cognit.models._prov_engine_client import (
 from cognit.modules._logger import CognitLogger
 
 cognit_logger = CognitLogger()
+
+COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
 
 TEST_SR_ENDPOINT = "http://172.16.105.5:8000"
 
@@ -52,7 +45,7 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./cognit/test/config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -79,7 +72,7 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./cognit/test/config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -114,7 +107,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./cognit/test/config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
     assert ret == StatusCode.SUCCESS
@@ -153,7 +146,7 @@ def test_sr_ctx_status(
 
 
 def test_sr_ctx_status_no_init():
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./cognit/test/config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     assert my_cognit_runtime.status == None
 
 
@@ -176,18 +169,8 @@ def test_sr_ctx_call_async(
 ):
     test_params = [2, 3, 4]
 
-    #mock_resp = mocker.Mock()
-    #mock_resp.json.return_value = {"success": True}
-    #mock_resp.status_code = 200
-    #mocker.patch("requests.post", return_value=mock_resp)
-
     status = test_ready_sr_ctx.call_async(dummy_func, 4,5,3)
-    #status = srvl_rtm_ctx.call_sync()
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("STATUS: {}".format(type(status)))
-    print("DIR status: {}".format(dir(status)))
 
-    #assert status.exec_id == AsyncExecId(faas_task_uuid="000-000-000")
     assert status.status == AsyncExecStatus.WORKING
 
 def dummy_func_(a,b,c):
@@ -209,9 +192,6 @@ def test_sr_ctx_sync_func_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     status = test_ready_sr_ctx.call_sync("c = a * b *c", 2,3,4)
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("Dir status(): {}".format(dir(status)))
-    print("STATUS: {}".format(status))
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
@@ -222,9 +202,6 @@ def test_sr_ctx_sync_param_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     status = test_ready_sr_ctx.call_sync(dummy_func, [2,3,4])
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("Dir status(): {}".format(dir(status)))
-    print("STATUS: {}".format(status))
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
@@ -235,9 +212,6 @@ def test_sr_ctx_sync_param_error2(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     status = test_ready_sr_ctx.call_sync(dummy_func, 2,3,4,5)
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("Dir status(): {}".format(dir(status)))
-    print("STATUS: {}".format(status))
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
@@ -248,9 +222,6 @@ def test_sr_ctx_async_func_format_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     status = test_ready_sr_ctx.call_async("c = a * b *c", 4,5,3)
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("STATUS: {}".format(type(status)))
-    print("DIR status: {}".format(dir(status)))
     assert status.status == AsyncExecStatus.FAILED
     assert status.exec_id == AsyncExecId(faas_task_uuid="000-000-000")
 
@@ -259,9 +230,6 @@ def test_sr_ctx_async_param_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     status = test_ready_sr_ctx.call_async(dummy_func, [2,3,4])
-    print("Dir(): {}".format(dir(test_ready_sr_ctx)))
-    print("STATUS: {}".format(type(status)))
-    print("DIR status: {}".format(dir(status)))
     assert status.status == AsyncExecStatus.WORKING
 
 
@@ -270,7 +238,6 @@ def test_sr_ctx_wait_param_error(
 ):
     status1 = test_ready_sr_ctx.call_async(dummy_func, [4,5,3])
     status2 = test_ready_sr_ctx.wait(status1.exec_id, 3)
-    print("Context wait status: {}".format(status1))
     assert status2.status == AsyncExecStatus.FAILED
     assert status2.exec_id == status1.exec_id
 
@@ -284,6 +251,5 @@ def test_sr_ctx_wait_faulty_func(
 ):
     status1 = test_ready_sr_ctx.call_async(faulty_function, 4,5,3)
     status2 = test_ready_sr_ctx.wait(status1.exec_id, 3)
-    print("Context wait status: {}".format(status1))
     assert status2.status == AsyncExecStatus.FAILED
     assert status2.exec_id == status1.exec_id
