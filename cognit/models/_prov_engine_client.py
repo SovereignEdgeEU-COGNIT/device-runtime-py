@@ -9,33 +9,39 @@ class FaaSState(str, Enum):
     ServerlessRuntimeState representation
     """
 
-    PENDING = "pending"
-    RUNNING = "running"
+    PENDING = "PENDING"
+    # RUNNING = "ACTIVE"
+    RUNNING = "RUNNING"
+    NO_STATE = ""
 
 
 class FaaSConfig(BaseModel):
-    CPU: Optional[int] = Field(
+    CPU: int = Field(
+        default=1,
         description="Integer describing the number of CPUs allocated to the VM serving the Runtime",
     )
-    MEMORY: Optional[int] = Field(
+    MEMORY: int = Field(
+        default=1,
         description="Integer describing the RAM in MB of CPUs allocated to the VM serving the Runtime",
     )
-    DISK_SIZE: Optional[int] = Field(
+    DISK_SIZE: int = Field(
+        default=1,
         description="Integer describing the size in MB of the disk allocated to the VM serving the Runtime",
     )
-    FLAVOUR: Optional[str] = Field(
+    FLAVOUR: str = Field(
+        default="nature",
         description="String describing the flavour of the Runtime. There is one identifier per DaaS and FaaS corresponding to the different use cases",
     )
     ENDPOINT: str = Field(
         default="",
         description="String containing the HTTP URL of the Runtime. Must be empty or nonexistent in creation.",
     )
-    STATE: FaaSState = Field(
+    STATE: Optional[FaaSState] = Field(
         default="",
         description="String containing the state of the VM containing the Runtime. It can be any state defined by the Cloud/Edge Manager, the relevant subset is “pending” and “running”",
     )
     VM_ID: Optional[str] = Field(
-        default="",
+        default=None,
         description="String containing the ID of the VM containing the Serverless Runtime, running in the Cloud/Edge Manager.",
     )
 
@@ -93,7 +99,11 @@ class DeviceInfo(BaseModel):
     )
 
 
-class ServerlessRuntime(BaseModel):
+class Empty(BaseModel):
+    ...
+
+
+class ServerlessRuntimeData(BaseModel):
     NAME: Optional[str] = Field(
         description="Name of the Serverless Runtime. Must be empty or nonexistent in creation",
     )
@@ -102,8 +112,20 @@ class ServerlessRuntime(BaseModel):
     )
 
     FAAS: FaaSConfig = Field(description="FaaS Config")
-    DAAS: Optional[DaaSConfig] = Field(description="DaaS Config")
+    # DAAS: Optional[DaaSConfig] = Field(description="DaaS Config")
+    DAAS: Optional[Empty]
 
-    SCHEDULING: Optional[Scheduling]
+    SCHEDULING: Optional[Scheduling | Empty]
 
-    DEVICE_INFO: Optional[DeviceInfo]
+    DEVICE_INFO: Optional[DeviceInfo | Empty]
+
+
+class ServerlessRuntime(BaseModel):
+    SERVERLESS_RUNTIME: ServerlessRuntimeData = Field(
+        # TODO: DEVICE_INFO and SCHEDULING should not be hardcoded to empty. Next commented example should be implemented.
+        # ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
+        ServerlessRuntimeData(
+            FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()
+        ),
+        description="Serverless Runtime object",
+    )
