@@ -5,6 +5,7 @@ from cognit.models._prov_engine_client import *
 from cognit.models._serverless_runtime_client import *
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._prov_engine_client import ProvEngineClient
+import os
 
 TEST_RESPONSE_PENDING = {
     "SERVERLESS_RUNTIME": {
@@ -33,7 +34,7 @@ TEST_RESPONSE_PENDING = {
         "DEVICE_INFO": {
             "LATENCY_TO_PE": 1,
             "GEOGRAPHIC_LOCATION": "geographic_location",
-        }
+        },
     }
 }
 
@@ -66,11 +67,15 @@ TEST_RESPONSE_RUNNING = {
         "DEVICE_INFO": {
             "LATENCY_TO_PE": 1,
             "GEOGRAPHIC_LOCATION": "geographic_location",
-        }
+        },
     }
 }
 
-COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
+COGNIT_CONF_PATH = (
+    os.path.dirname(os.path.abspath(__file__))
+    + "/../../../cognit/test/config/cognit.yml"
+)
+
 
 @pytest.fixture
 def test_cognit_config() -> CognitConfig:

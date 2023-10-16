@@ -1,8 +1,9 @@
 import pytest
 from pytest_mock import MockerFixture
 import logging
-import sys
+import os
 import time
+
 
 from cognit.serverless_runtime_context import *
 from cognit.modules._faas_parser import FaasParser
@@ -23,9 +24,13 @@ from cognit.modules._logger import CognitLogger
 
 cognit_logger = CognitLogger()
 
-COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
+COGNIT_CONF_PATH = (
+    os.path.dirname(os.path.abspath(__file__))
+    + "/../../../cognit/test/config/cognit.yml"
+)
 
 TEST_SR_ENDPOINT = "http://172.16.105.5:8000"
+
 
 @pytest.fixture
 def test_requested_sr_ctx(mocker: MockerFixture):
@@ -127,7 +132,7 @@ def test_sr_ctx_status(
     )
 
     assert test_requested_sr_ctx.status == FaaSState.PENDING
-    #assert test_requested_sr_ctx.status == FaaSState.NOTHING
+    # assert test_requested_sr_ctx.status == FaaSState.NOTHING
 
     #  The second time should return RUNNING  status and a valid endpoint
     f = FaaSConfig(
@@ -150,38 +155,40 @@ def test_sr_ctx_status_no_init():
     assert my_cognit_runtime.status == None
 
 
-def dummy_func(a,b,c):
+def dummy_func(a, b, c):
     return a * b * c
-
 
 
 def test_sr_ctx_call_sync(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_sync(dummy_func, 2,3,4)
-   
+    status = test_ready_sr_ctx.call_sync(dummy_func, 2, 3, 4)
+
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.SUCCESS
     assert status.res == 24
+
 
 def test_sr_ctx_call_async(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
     test_params = [2, 3, 4]
 
-    status = test_ready_sr_ctx.call_async(dummy_func, 4,5,3)
+    status = test_ready_sr_ctx.call_async(dummy_func, 4, 5, 3)
 
     assert status.status == AsyncExecStatus.WORKING
 
-def dummy_func_(a,b,c):
+
+def dummy_func_(a, b, c):
     return a * b * c
+
 
 def test_sr_ctx_wait(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status1 = test_ready_sr_ctx.call_async(dummy_func_, 4,5,3)
+    status1 = test_ready_sr_ctx.call_async(dummy_func_, 4, 5, 3)
     status2 = test_ready_sr_ctx.wait(status1.exec_id, 3)
-    
+
     assert status2 != None
     assert status2.res.res == 60
     assert status2.exec_id == status1.exec_id
@@ -191,37 +198,37 @@ def test_sr_ctx_wait(
 def test_sr_ctx_sync_func_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_sync("c = a * b *c", 2,3,4)
+    status = test_ready_sr_ctx.call_sync("c = a * b *c", 2, 3, 4)
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
-    assert status.err == '400'
+    assert status.err == "400"
 
 
 def test_sr_ctx_sync_param_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_sync(dummy_func, [2,3,4])
+    status = test_ready_sr_ctx.call_sync(dummy_func, [2, 3, 4])
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
-    assert status.err == '400'
+    assert status.err == "400"
 
 
 def test_sr_ctx_sync_param_error2(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_sync(dummy_func, 2,3,4,5)
+    status = test_ready_sr_ctx.call_sync(dummy_func, 2, 3, 4, 5)
     assert type(status) == ExecResponse
     assert status.ret_code == ExecReturnCode.ERROR
     assert status.res == None
-    assert status.err == '400'
+    assert status.err == "400"
 
 
 def test_sr_ctx_async_func_format_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_async("c = a * b *c", 4,5,3)
+    status = test_ready_sr_ctx.call_async("c = a * b *c", 4, 5, 3)
     assert status.status == AsyncExecStatus.FAILED
     assert status.exec_id == AsyncExecId(faas_task_uuid="000-000-000")
 
@@ -229,14 +236,14 @@ def test_sr_ctx_async_func_format_error(
 def test_sr_ctx_async_param_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status = test_ready_sr_ctx.call_async(dummy_func, [2,3,4])
+    status = test_ready_sr_ctx.call_async(dummy_func, [2, 3, 4])
     assert status.status == AsyncExecStatus.WORKING
 
 
 def test_sr_ctx_wait_param_error(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status1 = test_ready_sr_ctx.call_async(dummy_func, [4,5,3])
+    status1 = test_ready_sr_ctx.call_async(dummy_func, [4, 5, 3])
     status2 = test_ready_sr_ctx.wait(status1.exec_id, 3)
     assert status2.status == AsyncExecStatus.FAILED
     assert status2.exec_id == status1.exec_id
@@ -244,12 +251,13 @@ def test_sr_ctx_wait_param_error(
 
 def faulty_function(a, b, c):
     time.sleep(10)
-    return a/0
+    return a / 0
+
 
 def test_sr_ctx_wait_faulty_func(
     test_ready_sr_ctx: ServerlessRuntimeContext, mocker: MockerFixture
 ):
-    status1 = test_ready_sr_ctx.call_async(faulty_function, 4,5,3)
+    status1 = test_ready_sr_ctx.call_async(faulty_function, 4, 5, 3)
     status2 = test_ready_sr_ctx.wait(status1.exec_id, 3)
     assert status2.status == AsyncExecStatus.FAILED
     assert status2.exec_id == status1.exec_id

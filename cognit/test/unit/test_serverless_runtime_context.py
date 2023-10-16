@@ -1,5 +1,6 @@
 import pytest
 from pytest_mock import MockerFixture
+import os
 
 from cognit.models._prov_engine_client import *
 from cognit.models._serverless_runtime_client import *
@@ -7,7 +8,12 @@ from cognit.serverless_runtime_context import *
 
 TEST_SR_ENDPOINT = "http://myserverlessruntime-1234"
 
-COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
+
+COGNIT_CONF_PATH = (
+    os.path.dirname(os.path.abspath(__file__))
+    + "/../../../cognit/test/config/cognit.yml"
+)
+
 
 @pytest.fixture
 def test_requested_sr_ctx(mocker: MockerFixture):
@@ -27,9 +33,7 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(
-        config_path=COGNIT_CONF_PATH
-    )
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -56,9 +60,7 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(
-        config_path=COGNIT_CONF_PATH
-    )
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -93,9 +95,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(
-        config_path=COGNIT_CONF_PATH
-    )
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
     assert ret == StatusCode.SUCCESS
@@ -133,9 +133,7 @@ def test_sr_ctx_status(
 
 
 def test_sr_ctx_status_no_init():
-    my_cognit_runtime = ServerlessRuntimeContext(
-        config_path=COGNIT_CONF_PATH
-    )
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     assert my_cognit_runtime.status == None
 
 
@@ -157,7 +155,7 @@ def test_sr_ctx_call_sync(
     mocker.patch("requests.post", return_value=mock_resp)
 
     status = test_ready_sr_ctx.call_sync(dummy_func, 2, 3, 4)
-#    assert status == ExecResponse()
+    #    assert status == ExecResponse()
     assert status.res == (0, 1, 2, 3)
 
 
