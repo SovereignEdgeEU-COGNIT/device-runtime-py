@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -5,7 +7,6 @@ from cognit.models._prov_engine_client import *
 from cognit.models._serverless_runtime_client import *
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._prov_engine_client import ProvEngineClient
-import os
 
 TEST_RESPONSE_PENDING = {
     "SERVERLESS_RUNTIME": {

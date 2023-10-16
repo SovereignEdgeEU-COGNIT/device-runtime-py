@@ -26,7 +26,11 @@ class CognitConfig:
                 cognit_logger.debug(exc)
 
     def get_prov_context(self):
-        return (self.cf["default"]["host"], self.cf["default"]["port"], self.cf["default"]["pe_usr"])
+        return (
+            self.cf["default"]["host"],
+            self.cf["default"]["port"],
+            self.cf["default"]["pe_usr"],
+        )
 
     @property
     def prov_engine_endpoint(self):

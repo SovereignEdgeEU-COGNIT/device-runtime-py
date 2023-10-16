@@ -1,6 +1,7 @@
+import os
+
 import pytest
 from pytest_mock import MockerFixture
-import os
 
 from cognit.models._prov_engine_client import *
 from cognit.models._serverless_runtime_client import *

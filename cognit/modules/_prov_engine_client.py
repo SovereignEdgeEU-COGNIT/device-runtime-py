@@ -46,9 +46,12 @@ class ProvEngineClient:
         url = "{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT)
 
         cognit_logger.warning("Create [POST] URL: {}".format(url))
-        r = req.post(url, auth=(self.config._prov_engine_pe_usr,\
-                self.config._prov_engine_pe_pwd), json=serverless_runtime.dict(),\
-                timeout=REQ_TIMEOUT)
+        r = req.post(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            json=serverless_runtime.dict(),
+            timeout=REQ_TIMEOUT,
+        )
 
         if r.status_code != 201:
             cognit_logger.error(
@@ -76,8 +79,11 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT, sr_id)
-        r = req.get(url, auth=(self.config._prov_engine_pe_usr,\
-                self.config._prov_engine_pe_pwd), timeout=REQ_TIMEOUT)
+        r = req.get(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            timeout=REQ_TIMEOUT,
+        )
         cognit_logger.warning("Retrieve [GET] URL: {}".format(url))
 
         if r.status_code != 200:
@@ -103,8 +109,11 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT, sr_id)
-        r = req.delete(url, auth=(self.config._prov_engine_pe_usr,\
-                self.config._prov_engine_pe_pwd), timeout=REQ_TIMEOUT)
+        r = req.delete(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            timeout=REQ_TIMEOUT,
+        )
         cognit_logger.warning("Delete [DELETE] URL: {}".format(url))
 
         if r.status_code != 204:

@@ -3,14 +3,11 @@ from enum import Enum
 from typing import Callable, List, Optional
 
 from cognit.models._prov_engine_client import (
-        FaaSConfig,
-        Empty,
-        DaaSConfig,
-        Scheduling,
-        DeviceInfo,
-        FaaSState,
-        ServerlessRuntimeData,
-        ServerlessRuntime,
+    Empty,
+    FaaSConfig,
+    FaaSState,
+    ServerlessRuntime,
+    ServerlessRuntimeData,
 )
 from cognit.models._serverless_runtime_client import (
     AsyncExecResponse,
@@ -131,7 +128,7 @@ class ServerlessRuntimeContext:
             DEVICE_INFO=Empty(),
             SCHEDULING=Empty(),
         )
-        
+
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
 
         new_sr_response = self.pec.create(new_sr_request)
@@ -140,7 +137,10 @@ class ServerlessRuntimeContext:
             cognit_logger.error("Serverless Runtime creation request failed")
             return StatusCode.ERROR
 
-        if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (FaaSState.PENDING,FaaSState.NO_STATE):
+        if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
+            FaaSState.PENDING,
+            FaaSState.NO_STATE,
+        ):
             cognit_logger.error(
                 "Serverless Runtime creation request failed: returned state is not PENDING ({0})".format(
                     new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
@@ -209,13 +209,18 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
                 return ExecResponse(ExecReturnCode.ERROR)
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 
@@ -263,7 +268,10 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -273,7 +281,9 @@ class ServerlessRuntimeContext:
                     exec_id="0",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 
@@ -312,7 +322,10 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -322,7 +335,9 @@ class ServerlessRuntimeContext:
                     exec_id="000-000-000",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 

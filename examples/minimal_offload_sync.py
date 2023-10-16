@@ -8,10 +8,11 @@ import time
 
 from cognit import (
     EnergySchedulingPolicy,
+    FaaSState,
     ServerlessRuntimeConfig,
     ServerlessRuntimeContext,
-    FaaSState,
 )
+
 
 def sum(a: int, b: int):
     return a + b
@@ -33,7 +34,7 @@ except Exception as e:
 
 # Wait until the runtime is ready
 
-#my_cognit_runtime.status
+# my_cognit_runtime.status
 while my_cognit_runtime.status != FaaSState.RUNNING:
     time.sleep(1)
 
@@ -45,6 +46,6 @@ result = my_cognit_runtime.call_sync(sum, 2, 2)
 
 print("Offloaded function result", result)
 
-my_cognit_runtime.delete() # Fill in with the ID of your created Serverless Runtime
+my_cognit_runtime.delete()  # Fill in with the ID of your created Serverless Runtime
 
 print("Cognit runtime deleted!")

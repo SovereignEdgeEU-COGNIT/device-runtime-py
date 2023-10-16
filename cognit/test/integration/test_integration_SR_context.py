@@ -1,26 +1,22 @@
-import pytest
-from pytest_mock import MockerFixture
 import logging
 import os
 import time
 
+import pytest
+from pytest_mock import MockerFixture
 
-from cognit.serverless_runtime_context import *
+from cognit.models._prov_engine_client import FaaSConfig, FaaSState
 from cognit.modules._faas_parser import FaasParser
+from cognit.modules._logger import CognitLogger
 from cognit.modules._serverless_runtime_client import (
-    ExecReturnCode,
-    ExecSyncParams,
+    AsyncExecId,
     AsyncExecResponse,
     AsyncExecStatus,
     ExecResponse,
-    AsyncExecId,
+    ExecReturnCode,
+    ExecSyncParams,
 )
-from cognit.models._prov_engine_client import (
-    FaaSConfig,
-    FaaSState,
-)
-
-from cognit.modules._logger import CognitLogger
+from cognit.serverless_runtime_context import *
 
 cognit_logger = CognitLogger()
 

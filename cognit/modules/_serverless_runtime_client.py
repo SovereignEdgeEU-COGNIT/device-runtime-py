@@ -123,10 +123,10 @@ class ServerlessRuntimeClient:
             response = None
             if r.status_code == 200:
                 response = pydantic.parse_obj_as(AsyncExecResponse, r.json())
-            
+
             if r.status_code == 400:
                 response = pydantic.parse_obj_as(AsyncExecResponse, r.json())
-            
+
             # Return the status code of the response
             return response
         except Exception as e:

@@ -10,7 +10,7 @@ class FaaSState(str, Enum):
     """
 
     PENDING = "PENDING"
-    #RUNNING = "ACTIVE"
+    # RUNNING = "ACTIVE"
     RUNNING = "RUNNING"
     NO_STATE = ""
 
@@ -98,8 +98,10 @@ class DeviceInfo(BaseModel):
         description="String describing the geographic location of the client device in WGS84",
     )
 
+
 class Empty(BaseModel):
     ...
+
 
 class ServerlessRuntimeData(BaseModel):
     NAME: Optional[str] = Field(
@@ -110,17 +112,20 @@ class ServerlessRuntimeData(BaseModel):
     )
 
     FAAS: FaaSConfig = Field(description="FaaS Config")
-    #DAAS: Optional[DaaSConfig] = Field(description="DaaS Config")
+    # DAAS: Optional[DaaSConfig] = Field(description="DaaS Config")
     DAAS: Optional[Empty]
 
-    SCHEDULING: Optional[Scheduling|Empty]
+    SCHEDULING: Optional[Scheduling | Empty]
 
-    DEVICE_INFO: Optional[DeviceInfo|Empty]
+    DEVICE_INFO: Optional[DeviceInfo | Empty]
+
 
 class ServerlessRuntime(BaseModel):
     SERVERLESS_RUNTIME: ServerlessRuntimeData = Field(
         # TODO: DEVICE_INFO and SCHEDULING should not be hardcoded to empty. Next commented example should be implemented.
-        #ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
-        ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()),
-        description="Serverless Runtime object"
+        # ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
+        ServerlessRuntimeData(
+            FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()
+        ),
+        description="Serverless Runtime object",
     )

@@ -4,6 +4,7 @@ from pytest_mock import MockerFixture
 from cognit.models._prov_engine_client import *
 from cognit.models._serverless_runtime_client import *
 from cognit.modules._cognitconfig import CognitConfig
+from cognit.modules._logger import CognitLogger
 from cognit.modules._prov_engine_client import ProvEngineClient
 from cognit.serverless_runtime_context import (
     EnergySchedulingPolicy,
@@ -11,7 +12,6 @@ from cognit.serverless_runtime_context import (
     ServerlessRuntimeContext,
 )
 
-from cognit.modules._logger import CognitLogger
 cognit_logger = CognitLogger()
 
 COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit.yml"
@@ -88,6 +88,7 @@ def sr_context(test_cognit_config: CognitConfig) -> ServerlessRuntimeContext:
     my_cognit = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     return my_cognit
 
+
 def test_prov_engine_create(
     sr_context: ServerlessRuntimeContext,
 ):
@@ -100,7 +101,6 @@ def test_prov_engine_create(
     try:
         ret = sr_context.create(sr_conf)
     except Exception as e:
-        cognit_logger.error(f'Error: {e}')
-        
-    assert ret != None
+        cognit_logger.error(f"Error: {e}")
 
+    assert ret != None
