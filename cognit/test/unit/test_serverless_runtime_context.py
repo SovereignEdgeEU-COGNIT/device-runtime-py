@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -8,13 +10,20 @@ from cognit.serverless_runtime_context import *
 TEST_SR_ENDPOINT = "http://myserverlessruntime-1234"
 
 
+COGNIT_CONF_PATH = (
+    os.path.dirname(os.path.abspath(__file__))
+    + "/../../../cognit/test/config/cognit.yml"
+)
+
+
 @pytest.fixture
 def test_requested_sr_ctx(mocker: MockerFixture):
     """
     _summary_: Fixture that returns a ServerlessRuntimeContext object already requested with id 42
     """
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -25,7 +34,7 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
@@ -40,7 +49,8 @@ def test_ready_sr_ctx(mocker: MockerFixture):
 
     # The first time we request the SR, must be pending
     f = FaaSConfig(STATE=FaaSState.PENDING, ENDPOINT=TEST_SR_ENDPOINT)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -51,13 +61,13 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
 
     # After a call to status, the SR must be running
     # We mock the retrieve method to return a running SR
-    sr.FAAS.STATE = FaaSState.RUNNING
+    sr.SERVERLESS_RUNTIME.FAAS.STATE = FaaSState.RUNNING
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -74,7 +84,8 @@ def test_sr_ctx_create(mocker: MockerFixture):
 
     # Return a pending SR
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.create",
@@ -85,7 +96,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
     assert ret == StatusCode.SUCCESS
@@ -96,7 +107,8 @@ def test_sr_ctx_status(
 ):
     # First should reutrn pending status
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    pending_sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    pending_sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    pending_sr = ServerlessRuntime(SERVERLESS_RUNTIME=pending_sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -110,7 +122,8 @@ def test_sr_ctx_status(
         STATE=FaaSState.RUNNING,
         ENDPOINT=TEST_SR_ENDPOINT,
     )
-    running_sr = ServerlessRuntime(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    running_sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    running_sr = ServerlessRuntime(SERVERLESS_RUNTIME=running_sr_data)
 
     mocker.patch(
         "cognit.modules._prov_engine_client.ProvEngineClient.retrieve",
@@ -121,7 +134,7 @@ def test_sr_ctx_status(
 
 
 def test_sr_ctx_status_no_init():
-    my_cognit_runtime = ServerlessRuntimeContext(config_path="./config/cognit.yml")
+    my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     assert my_cognit_runtime.status == None
 
 
@@ -135,7 +148,7 @@ def test_sr_ctx_call_sync(
     # Mock the response of a sync function offloading
     mock_resp = mocker.Mock()
     mock_resp.json.return_value = {
-        "result": "gAWVDAAAAAAAAAAoSwBLAUsCSwN0lC4=",
+        "res": "gAWVDAAAAAAAAAAoSwBLAUsCSwN0lC4=",
         "code": 201,
     }
 
@@ -143,7 +156,8 @@ def test_sr_ctx_call_sync(
     mocker.patch("requests.post", return_value=mock_resp)
 
     status = test_ready_sr_ctx.call_sync(dummy_func, 2, 3, 4)
-    assert status == ExecResponse()
+    #    assert status == ExecResponse()
+    assert status.res == (0, 1, 2, 3)
 
 
 def test_sr_ctx_call_async(
@@ -201,7 +215,7 @@ def test_sr_ctx_delete(
     mock_src_delete.status_code = 200
 
     mocker.patch("requests.delete", return_value=mock_src_delete)
-    test_ready_sr_ctx.delete(12345)
+    test_ready_sr_ctx.delete()
 
     # TODO: How to test that an SR is deleted within an unitary test
     # with no interaction with PE
