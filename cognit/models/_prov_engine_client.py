@@ -41,7 +41,7 @@ class FaaSConfig(BaseModel):
         description="String containing the state of the VM containing the Runtime. It can be any state defined by the Cloud/Edge Manager, the relevant subset is “pending” and “running”",
     )
     VM_ID: Optional[str] = Field(
-        default=0,
+        #default=0,
         description="String containing the ID of the VM containing the Serverless Runtime, running in the Cloud/Edge Manager.",
     )
 
