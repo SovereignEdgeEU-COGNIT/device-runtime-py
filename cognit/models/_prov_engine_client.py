@@ -21,11 +21,11 @@ class FaaSConfig(BaseModel):
         description="Integer describing the number of CPUs allocated to the VM serving the Runtime",
     )
     MEMORY: int = Field(
-        default=1,
+        default=768,
         description="Integer describing the RAM in MB of CPUs allocated to the VM serving the Runtime",
     )
     DISK_SIZE: int = Field(
-        default=1,
+        default=3072,
         description="Integer describing the size in MB of the disk allocated to the VM serving the Runtime",
     )
     FLAVOUR: str = Field(
@@ -52,11 +52,9 @@ class DaaSConfig(BaseModel):
         description="Integer describing the number of CPUs allocated to the VM serving the Runtime",
     )
     MEMORY: Optional[int] = Field(
-        default=768,
         description="Integer describing the RAM in MB of CPUs allocated to the VM serving the Runtime",
     )
     DISK_SIZE: Optional[int] = Field(
-        default=3072,
         description="Integer describing the size in MB of the disk allocated to the VM serving the Runtime",
     )
     FLAVOUR: str = Field(
