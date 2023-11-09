@@ -8,7 +8,7 @@ setup(
     license="GPL",
     url="https://cognit.sovereignedge.eu/",
     include_package_data=True,
-    packages=find_packages() + ["cognit.models", "cognit.modules", "cognit.test"],
+    packages=find_packages() + ["cognit.models", "cognit.modules", "cognit.test.integration", "cognit.test.unit"],
     install_requires=[i.strip() for i in open("requirements.txt").readlines()],
     test_suite="cognit.test",
 )
