@@ -21,11 +21,11 @@ class FaaSConfig(BaseModel):
         description="Integer describing the number of CPUs allocated to the VM serving the Runtime",
     )
     MEMORY: int = Field(
-        default=1,
+        default=768,
         description="Integer describing the RAM in MB of CPUs allocated to the VM serving the Runtime",
     )
     DISK_SIZE: int = Field(
-        default=1,
+        default=3072,
         description="Integer describing the size in MB of the disk allocated to the VM serving the Runtime",
     )
     FLAVOUR: str = Field(
@@ -37,11 +37,11 @@ class FaaSConfig(BaseModel):
         description="String containing the HTTP URL of the Runtime. Must be empty or nonexistent in creation.",
     )
     STATE: Optional[FaaSState] = Field(
-        default="",
+        #default="PENDING",
         description="String containing the state of the VM containing the Runtime. It can be any state defined by the Cloud/Edge Manager, the relevant subset is “pending” and “running”",
     )
     VM_ID: Optional[str] = Field(
-        default=None,
+        #default=0,
         description="String containing the ID of the VM containing the Serverless Runtime, running in the Cloud/Edge Manager.",
     )
 
@@ -52,11 +52,9 @@ class DaaSConfig(BaseModel):
         description="Integer describing the number of CPUs allocated to the VM serving the Runtime",
     )
     MEMORY: Optional[int] = Field(
-        default="",
         description="Integer describing the RAM in MB of CPUs allocated to the VM serving the Runtime",
     )
     DISK_SIZE: Optional[int] = Field(
-        default="",
         description="Integer describing the size in MB of the disk allocated to the VM serving the Runtime",
     )
     FLAVOUR: str = Field(
@@ -107,7 +105,7 @@ class ServerlessRuntimeData(BaseModel):
     NAME: Optional[str] = Field(
         description="Name of the Serverless Runtime. Must be empty or nonexistent in creation",
     )
-    ID: Optional[int] = Field(
+    ID: Optional[int | Empty] = Field(
         description="Integer describing a unique identifier for the Serverless Runtime. ",
     )
 
