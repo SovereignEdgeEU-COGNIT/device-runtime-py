@@ -12,6 +12,11 @@ SR_RESOURCE_ENDPOINT = "serverless-runtimes"
 
 REQ_TIMEOUT = 60
 
+def filter_empty_values(data):
+    if isinstance(data, dict):
+        return {key: filter_empty_values(value) for key, value in data.items() if value is not None}
+    else:
+        return data
 
 class ProvEngineClient:
     def __init__(
@@ -44,12 +49,15 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT)
+        
+        aux_dict = filter_empty_values(serverless_runtime.dict())
+        cognit_logger.warning(str(aux_dict))
 
         cognit_logger.warning("Create [POST] URL: {}".format(url))
         r = req.post(
             url,
             auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
-            json=serverless_runtime.dict(),
+            json=aux_dict,
             timeout=REQ_TIMEOUT,
         )
 
