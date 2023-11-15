@@ -1,6 +1,7 @@
 # This is needed to run the example from the cognit source code
 # If you installed cognit with pip, you can remove this
 import sys
+import time
 
 sys.path.append(".")
 
@@ -15,6 +16,7 @@ from cognit import (
 
 
 def sum(a: int, b: int):
+    #time.sleep(20)
     return a + b
 
 
@@ -47,6 +49,7 @@ print("COGNIT Serverless Runtime ready!")
 
 # call_sync sendsto execute sync.ly to the already assigned Serverless Runtime.
 # First argument is the function, followed by the parameters to execute it.
+time.sleep(15)
 result = my_cognit_runtime.call_sync(sum, 2, 2)
 
 print("Offloaded function result", result)
