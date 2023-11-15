@@ -1,4 +1,4 @@
-import time
+import time, re
 from enum import Enum
 from typing import Callable, List, Optional
 
@@ -26,7 +26,6 @@ from cognit.modules._serverless_runtime_client import (
 )
 
 cognit_logger = CognitLogger()
-
 
 class StatusCode(Enum):
     SUCCESS = (0,)
@@ -99,6 +98,7 @@ class ServerlessRuntimeContext:
         self.pec = ProvEngineClient(self.config)
         self.src = None
         self.sr_instance = None
+        self.url_proto = "http://"
 
     def create(
         self,
@@ -147,6 +147,12 @@ class ServerlessRuntimeContext:
                 )
             )
             return StatusCode.ERROR
+        
+        # Make sure that endpoint's URL contains protocol and port on it.
+        check_url = re.findall('^[0-9]', new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+        if len(check_url) > 0 and check_url[0] == '1':
+            new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                + ":" + str(self.config._servl_runt_port)
 
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
@@ -173,6 +179,11 @@ class ServerlessRuntimeContext:
 
         # Update the Serverless Runtime cached instance
         if sr_response != None:
+            # Make sure that endpoint's URL contains protocol and port on it.
+            check_url = re.findall('^[0-9]', sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+            if len(check_url) > 0 and check_url[0] == '1':
+                sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                    + ":" + str(self.config._servl_runt_port)
             self.sr_instance = sr_response
 
         return self.sr_instance.SERVERLESS_RUNTIME.FAAS.STATE

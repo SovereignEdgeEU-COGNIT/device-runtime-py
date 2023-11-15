@@ -13,6 +13,7 @@ class CognitConfig:
         self._prov_engine_port = None
         self._prov_engine_pe_usr = None
         self._prov_engine_pe_pwd = None
+        self._servl_runt_port = None
         # TODO : Return default values if json does not exist
         # with open("../../config/cognit.conf", "r") as file:
         with open(config_path, "r") as file:
@@ -21,6 +22,7 @@ class CognitConfig:
                 # TODO : Properly set as properties.
                 self._prov_engine_pe_usr = self.cf["pe_usr"]
                 self._prov_engine_pe_pwd = self.cf["pe_pwd"]
+                self._servl_runt_port = self.cf["sr_port"]
 
             except yaml.YAMLError as exc:
                 cognit_logger.debug(exc)
@@ -59,3 +61,10 @@ class CognitConfig:
         if self._prov_engine_pe_pwd is None:
             self._prov_engine_pe_pwd = self.cf["pe_pwd"]
         return self._prov_engine_pe_pwd
+    
+    @property
+    def servl_runt_port(self):
+        # Lazy read value
+        if self._servl_runt_port is None:
+            self._servl_runt_port = self.cf["sr_port"]
+        return self._servl_runt_port
