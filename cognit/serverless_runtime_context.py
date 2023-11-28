@@ -1,6 +1,7 @@
 import time, re
 from enum import Enum
 from typing import Callable, List, Optional
+from ipaddress import ip_address as ipadd, IPv4Address, IPv6Address
 
 from cognit.models._prov_engine_client import (
     Empty,
