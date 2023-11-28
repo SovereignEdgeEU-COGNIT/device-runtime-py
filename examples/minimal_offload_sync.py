@@ -33,7 +33,7 @@ try:
     # Perform the request of generating and assigning a Serverless Runtime to this Serverless Runtime context.
     ret = my_cognit_runtime.create(sr_conf)
 except Exception as e:
-    print("Error: {}".format(e))
+    print("Error in config file content: {}".format(e))
     exit(1)
 
 

@@ -19,17 +19,17 @@ The following installs the needed dependencies from the requirements.txt file:
 ```
 pip install -r requirements.txt
 ```
-## Setting up Cognit module
-To set up the Cognit module the following needs to be executed:
+## Setting up COGNIT module
+To set up the COGNIT module the following needs to be executed:
 ```
 python setup.py sdist
 ```
 
 In such a way that for installing it in an empty environment, one should:
 ```
-pip install dist/Cognit-0.1.tar.gz
+pip install dist/cognit-0.0.0.tar.gz
 ```
-Once done that, Cognit module's installation will be fully completed, so (for instance) for creating the Cognit context one needs to, as it can be checked in [examples/](examples/minimal_offload_sync.py):
+Once done that, COGNIT module's installation will be fully completed, so (for instance) for creating the COGNIT context one needs to, as it can be checked in [examples/](examples/minimal_offload_sync.py):
 ```
 from cognit.serverless_runtime_context import *
 
@@ -42,11 +42,11 @@ response = my_cognit_runtime.create(sr_conf)
 ```
 ## User's manual
 ### Configuration
-The configuration for your Cognit Device Runtime can be found in `cognit/test/config/cognit.yml`, with an example for running the tests.
+The configuration for your COGNIT Device Runtime can be found in `cognit/test/config/cognit.yml`, with an example for running the tests.
 
 ### Examples
-There are several folders that might be interesting for a user that is getting acquainted with Cognit:
-In the `examples/` folder one can find the minimal example for running a minimal example making use of the Cognit module.
+There are several folders that might be interesting for a user that is getting acquainted with COGNIT:
+In the `examples/` folder one can find the minimal example for running a minimal example making use of the COGNIT module.
 
 ### Tests
-The `cognit/test/`  folder holds the tests for the Cognit module. More info about how to run them in the [README.md](cognit/test/README.md) file.
+The `cognit/test/`  folder holds the tests for the COGNIT module. More info about how to run them in the [README.md](cognit/test/README.md) file.
