@@ -1,2 +1,0 @@
-endpoint: "127.0.0.1" # Fill in the IP of your Provisioning Engine
-port: 1337            # Fill in the port of your Provisioning Engine

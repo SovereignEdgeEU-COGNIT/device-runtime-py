@@ -30,6 +30,8 @@ class FaasParser:
         blob_b64 = b64.b64encode(blob_cp)
         return blob_b64.decode("utf-8")
 
-    def deserialize(self, input: bytes) -> Any:
-        # TODO encapsulate logic to parse from bytes to object
-        raise NotImplementedError
+    def deserialize(self, input: str) -> Any:
+        # Decode it from base64
+        b64_bytes = b64.b64decode(input)
+        # Cloudpickle it
+        return cp.loads(b64_bytes)
