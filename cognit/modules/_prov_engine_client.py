@@ -10,8 +10,13 @@ cognit_logger = CognitLogger()
 
 SR_RESOURCE_ENDPOINT = "serverless-runtimes"
 
-REQ_TIMEOUT = 5
+REQ_TIMEOUT = 60
 
+def filter_empty_values(data):
+    if isinstance(data, dict):
+        return {key: filter_empty_values(value) for key, value in data.items() if value is not None}
+    else:
+        return data
 
 class ProvEngineClient:
     def __init__(
@@ -26,7 +31,7 @@ class ProvEngineClient:
 
         """
         self.config = config
-        self.endpoint = "https://{0}:{1}".format(
+        self.endpoint = "http://{0}:{1}".format(
             self.config.prov_engine_endpoint, self.config.prov_engine_port
         )
 
@@ -44,9 +49,17 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT)
+        
+        aux_dict = filter_empty_values(serverless_runtime.dict())
+        cognit_logger.warning(str(aux_dict))
 
-        r = req.post(url, json=serverless_runtime.dict(), timeout=REQ_TIMEOUT)
         cognit_logger.warning("Create [POST] URL: {}".format(url))
+        r = req.post(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            json=aux_dict,
+            timeout=REQ_TIMEOUT,
+        )
 
         if r.status_code != 201:
             cognit_logger.error(
@@ -74,7 +87,11 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT, sr_id)
-        r = req.get(url, timeout=REQ_TIMEOUT)
+        r = req.get(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            timeout=REQ_TIMEOUT,
+        )
         cognit_logger.warning("Retrieve [GET] URL: {}".format(url))
 
         if r.status_code != 200:
@@ -100,7 +117,11 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT, sr_id)
-        r = req.delete(url, timeout=REQ_TIMEOUT)
+        r = req.delete(
+            url,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            timeout=REQ_TIMEOUT,
+        )
         cognit_logger.warning("Delete [DELETE] URL: {}".format(url))
 
         if r.status_code != 204:

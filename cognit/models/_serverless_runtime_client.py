@@ -52,6 +52,7 @@ class AsyncExecId(BaseModel):
 class AsyncExecStatus(Enum):
     WORKING = "WORKING"
     READY = "READY"
+    FAILED = "FAILED"
 
 
 class AsyncExecResponse(BaseModel):

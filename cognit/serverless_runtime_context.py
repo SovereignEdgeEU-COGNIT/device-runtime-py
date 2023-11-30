@@ -1,8 +1,15 @@
-import time
+import time, re
 from enum import Enum
 from typing import Callable, List, Optional
+from ipaddress import ip_address as ipadd, IPv4Address, IPv6Address
 
-from cognit.models._prov_engine_client import FaaSConfig, FaaSState, ServerlessRuntime
+from cognit.models._prov_engine_client import (
+    Empty,
+    FaaSConfig,
+    FaaSState,
+    ServerlessRuntime,
+    ServerlessRuntimeData,
+)
 from cognit.models._serverless_runtime_client import (
     AsyncExecResponse,
     AsyncExecStatus,
@@ -20,7 +27,6 @@ from cognit.modules._serverless_runtime_client import (
 )
 
 cognit_logger = CognitLogger()
-
 
 class StatusCode(Enum):
     SUCCESS = (0,)
@@ -93,6 +99,7 @@ class ServerlessRuntimeContext:
         self.pec = ProvEngineClient(self.config)
         self.src = None
         self.sr_instance = None
+        self.url_proto = "http://"
 
     def create(
         self,
@@ -116,10 +123,14 @@ class ServerlessRuntimeContext:
             requirements=requirements,
         )
 
-        new_sr_request = ServerlessRuntime(
+        new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
+            DEVICE_INFO=Empty(),
+            SCHEDULING=Empty(),
         )
+
+        new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
 
         new_sr_response = self.pec.create(new_sr_request)
 
@@ -127,13 +138,29 @@ class ServerlessRuntimeContext:
             cognit_logger.error("Serverless Runtime creation request failed")
             return StatusCode.ERROR
 
-        if new_sr_response.FAAS.STATE != FaaSState.PENDING:
+        if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
+            FaaSState.PENDING,
+            FaaSState.NO_STATE,
+        ):
             cognit_logger.error(
                 "Serverless Runtime creation request failed: returned state is not PENDING ({0})".format(
-                    new_sr_response.FAAS.STATE
+                    new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
                 )
             )
             return StatusCode.ERROR
+        
+        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
+        try:
+            if new_sr_response != None:
+                ip_version = ipadd(new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+                if type(ip_version) == IPv4Address:
+                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                        + ":" + str(self.config._servl_runt_port)
+                elif type(ip_version) == IPv6Address:
+                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                        + "]:" + str(self.config._servl_runt_port)
+        except ValueError as e:
+            cognit_logger.warning("Serverless runtime endpoint Ip address differs from IPv4 or IPv6")
 
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
@@ -149,20 +176,33 @@ class ServerlessRuntimeContext:
             StatusCode: The current Serverless Runtime status
         """
 
-        if self.sr_instance == None or self.sr_instance.ID == None:
+        if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.ID == None:
             cognit_logger.error(
                 "Serverless Runtime instance has not been requested yet"
             )
             return None
 
         # Retrieve the Serverless Runtime instance from the Provisioning Engine
-        sr_response = self.pec.retrieve(self.sr_instance.ID)
+        sr_response = self.pec.retrieve(self.sr_instance.SERVERLESS_RUNTIME.ID)
 
         # Update the Serverless Runtime cached instance
-        if sr_response != None:
-            self.sr_instance = sr_response
+        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
+        try:
+            if sr_response != None:
+                ip_version = ipadd(sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
+                if type(ip_version) == IPv4Address:
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                        + ":" + str(self.config._servl_runt_port)
+                elif type(ip_version) == IPv6Address:
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                        + "]:" + str(self.config._servl_runt_port)
+        except ValueError as e:
+            cognit_logger.warning("Serverless runtime endpoint's Ip address differs from IPv4 or IPv6")
 
-        return self.sr_instance.FAAS.STATE
+        # Update the Serverless Runtime instance
+        self.sr_instance = sr_response
+
+        return self.sr_instance.SERVERLESS_RUNTIME.FAAS.STATE
 
     # TODO: Not implemented yet.
     def copy(self, src, dst) -> StatusCode:
@@ -196,13 +236,18 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
                 return ExecResponse(ExecReturnCode.ERROR)
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 
@@ -220,7 +265,15 @@ class ServerlessRuntimeContext:
         # TODO: The client should update the sr status before offloading a function
         # if self.status() ==
 
-        return self.src.faas_execute_sync(offload_fc)
+        resp = self.src.faas_execute_sync(offload_fc)
+
+        # Handle http error codes (if resp.res=None there is nothing to deserialize)
+        if resp.res is not None:
+            resp.res = parser.deserialize(resp.res)
+        else:
+            cognit_logger.error("Sync request error; {0}".format(resp.err))
+
+        return resp
 
     def call_async(
         self,
@@ -242,7 +295,10 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -252,7 +308,9 @@ class ServerlessRuntimeContext:
                     exec_id="0",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 
@@ -291,7 +349,10 @@ class ServerlessRuntimeContext:
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
         if self.src == None:
-            if self.sr_instance == None or self.sr_instance.FAAS.ENDPOINT == None:
+            if (
+                self.sr_instance == None
+                or self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT == None
+            ):
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
@@ -301,7 +362,9 @@ class ServerlessRuntimeContext:
                     exec_id="000-000-000",
                 )
 
-            self.src = ServerlessRuntimeClient(self.sr_instance.FAAS.ENDPOINT)
+            self.src = ServerlessRuntimeClient(
+                self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
+            )
 
         parser = FaasParser()
 
@@ -310,14 +373,21 @@ class ServerlessRuntimeContext:
         # Timeout management loop.
         while timeout - iv > 0:
             response = self.src.wait(Id.faas_task_uuid)
-            if response.status == AsyncExecStatus.READY:
+            if response != None and response.status == AsyncExecStatus.READY:
+                if response.res != None:
+                    response.res.res = parser.deserialize(response.res.res)
                 return response
             time.sleep(iv)
             timeout -= iv
         return response
 
-    def delete(self, sr_id: int) -> None:
+    def delete(self) -> None:
         """
         Deletes the specified ServerlessRuntimeContext on demand.
         """
-        self.pec.delete(sr_id)
+        if self.sr_instance == None or self.sr_instance.SERVERLESS_RUNTIME.ID == None:
+            cognit_logger.error(
+                "Serverless Runtime instance has not been requested yet"
+            )
+            return None
+        self.pec.delete(self.sr_instance.SERVERLESS_RUNTIME.ID)
