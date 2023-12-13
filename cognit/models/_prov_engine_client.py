@@ -76,12 +76,12 @@ class DaaSConfig(BaseModel):
 
 
 class Scheduling(BaseModel):
-    POLICY: str = Field(
-        ...,
+    POLICY: Optional[str] = Field(
+        default="",
         description="String describing the policy applied to scheduling. Eg: “energy, latency” will optimise the placement according to those two criteria",
     )
-    REQUIREMENTS: str = Field(
-        ...,
+    REQUIREMENTS: Optional[str] = Field(
+        default="",
         description="String describing the requirements of the placement. For instance, “energy_renewal” will only consider hypervisors powered by renewable energy.",
     )
 
@@ -91,8 +91,8 @@ class DeviceInfo(BaseModel):
         ...,
         description="Integer describing in ms the latency from the client device to the Provisioning Engine endpoint",
     )
-    GEOGRAPHIC_LOCATION: str = Field(
-        ...,
+    GEOGRAPHIC_LOCATION: Optional[str] = Field(
+        default="",
         description="String describing the geographic location of the client device in WGS84",
     )
 
@@ -121,9 +121,9 @@ class ServerlessRuntimeData(BaseModel):
 class ServerlessRuntime(BaseModel):
     SERVERLESS_RUNTIME: ServerlessRuntimeData = Field(
         # TODO: DEVICE_INFO and SCHEDULING should not be hardcoded to empty. Next commented example should be implemented.
-        # ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
-        ServerlessRuntimeData(
-            FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()
-        ),
+        ServerlessRuntimeData(FAAS=FaaSConfig(), DEVICE_INFO=DeviceInfo(), SCHEDULING=Scheduling()),
+        #ServerlessRuntimeData(
+        #    FAAS=FaaSConfig(), DEVICE_INFO=Empty(), SCHEDULING=Empty()
+        #),
         description="Serverless Runtime object",
     )
