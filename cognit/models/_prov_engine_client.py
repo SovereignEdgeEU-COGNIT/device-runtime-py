@@ -87,10 +87,10 @@ class Scheduling(BaseModel):
 
 
 class DeviceInfo(BaseModel):
-    LATENCY_TO_PE: int = Field(
-        ...,
-        description="Integer describing in ms the latency from the client device to the Provisioning Engine endpoint",
-    )
+    #LATENCY_TO_PE: int = Field(
+    #    ...,
+    #    description="Integer describing in ms the latency from the client device to the Provisioning Engine endpoint",
+    #)
     GEOGRAPHIC_LOCATION: Optional[str] = Field(
         default="",
         description="String describing the geographic location of the client device in WGS84",
