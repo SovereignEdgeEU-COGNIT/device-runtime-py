@@ -5,6 +5,8 @@ from ipaddress import ip_address as ipadd, IPv4Address, IPv6Address
 
 from cognit.models._prov_engine_client import (
     Empty,
+    DeviceInfo,
+    Scheduling,
     FaaSConfig,
     FaaSState,
     ServerlessRuntime,
@@ -80,6 +82,8 @@ class ServerlessRuntimeConfig:
 
     scheduling_policies: List[SchedulingPolicy] = []
     name: str = ""
+    faas_flavour = "nature"
+    daas_flavour = "default"
 
 
 class ServerlessRuntimeContext:
@@ -121,13 +125,14 @@ class ServerlessRuntimeContext:
             name=serveless_runtime_config.name,
             policies=policies,
             requirements=requirements,
+            FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
-            DEVICE_INFO=Empty(),
-            SCHEDULING=Empty(),
+            DEVICE_INFO=DeviceInfo(),
+            SCHEDULING=Scheduling(),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -148,7 +153,7 @@ class ServerlessRuntimeContext:
                 )
             )
             return StatusCode.ERROR
-        
+
         # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
         try:
             if new_sr_response != None:
