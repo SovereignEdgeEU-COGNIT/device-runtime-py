@@ -1,4 +1,5 @@
 import time, re
+import geocoder
 from enum import Enum
 from typing import Callable, List, Optional
 from ipaddress import ip_address as ipadd, IPv4Address, IPv6Address
@@ -35,6 +36,24 @@ class StatusCode(Enum):
     ERROR = 1
     PENDING = 2
 
+class Geolocator:
+    """
+    Geolocator representation:
+
+    Args:
+        None
+    Properties:
+        country (str): Country name
+        city (str): City name
+    """
+
+    def __init__(self):
+        self.country = ""
+        self.city = ""
+        g = geocoder.ip("device_runtime")
+        self.geo = g
+        cognit_logger.warning(str(g))
+        #return g.geojson["features"][0]["properties"]["raw"]
 
 class SchedulingPolicy:
     """
@@ -112,6 +131,8 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
+        geolocation = "Basque Country"
+        geoloc = Geolocator()
 
         for policy in serveless_runtime_config.scheduling_policies:
             policies += policy.policy_name
@@ -131,8 +152,8 @@ class ServerlessRuntimeContext:
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
-            DEVICE_INFO=DeviceInfo(),
-            SCHEDULING=Scheduling(),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -224,7 +245,7 @@ class ServerlessRuntimeContext:
         self,
         func: Callable,
         *params,
-        # **kwargs,
+        **kwargs,
     ) -> ExecResponse:
         """
         Perform the offload of a function to the cognit platform and wait for\
@@ -256,7 +277,19 @@ class ServerlessRuntimeContext:
 
         parser = FaasParser()
 
-        # Serialize the function an the params
+        # Serialize the function and the params
+        # First dependency management.
+        include_deps = []
+        exclude_deps = []
+        if kwargs.__len__() > 0:
+            if "include_modules" in kwargs and type(kwargs[include_modules]) is list:
+                include_deps = kwargs["include_modules"]
+            if "exclude_modules" in kwargs and type(kwargs[exclude_modules]) is list:
+                exclude_deps = kwargs["exclude_modules"]
+
+        # TODO: Think on implementing separated serialize method for function serialization.
+        # for better dependency management.
+        #serialized_fc = parser.serialize_func(func, include_deps, exclude_deps)
         serialized_fc = parser.serialize(func)
         serialized_params = []
         for param in params:
@@ -284,6 +317,7 @@ class ServerlessRuntimeContext:
         self,
         func: Callable,
         *params,
+        **kwargs,
     ) -> AsyncExecResponse:
         """
         Perform the offload of a function to the cognit platform without \
