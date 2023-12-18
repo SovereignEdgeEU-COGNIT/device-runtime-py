@@ -1,4 +1,4 @@
-import time, re
+import time, re, hashlib
 import geocoder
 from enum import Enum
 from typing import Callable, List, Optional
@@ -50,10 +50,9 @@ class Geolocator:
     def __init__(self):
         self.country = ""
         self.city = ""
-        g = geocoder.ip("device_runtime")
-        self.geo = g
-        cognit_logger.warning(str(g))
-        #return g.geojson["features"][0]["properties"]["raw"]
+        g = geocoder.ip("me")
+        self.geo = g.geojson["features"][0]["properties"]["raw"]
+        cognit_logger.warning(str(g.geojson["features"][0]["properties"]["raw"]))
 
 class SchedulingPolicy:
     """
@@ -131,8 +130,8 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
-        geolocation = "Basque Country"
         geoloc = Geolocator()
+        geolocation = str(geoloc.geo)
 
         for policy in serveless_runtime_config.scheduling_policies:
             policies += policy.policy_name
@@ -278,6 +277,7 @@ class ServerlessRuntimeContext:
         parser = FaasParser()
 
         # Serialize the function and the params
+        # TODO: Include FaaS + DaaS dependencies management.
         # First dependency management.
         include_deps = []
         exclude_deps = []
@@ -286,6 +286,10 @@ class ServerlessRuntimeContext:
                 include_deps = kwargs["include_modules"]
             if "exclude_modules" in kwargs and type(kwargs[exclude_modules]) is list:
                 exclude_deps = kwargs["exclude_modules"]
+
+        # TODO: Implement Hashing of function.
+        func_hash = hashlib.sha256(repr(func).encode('utf-8')).hexdigest()
+
 
         # TODO: Think on implementing separated serialize method for function serialization.
         # for better dependency management.
@@ -379,7 +383,7 @@ class ServerlessRuntimeContext:
 
         Args:
             Id (AsyncExecId): ID of the FaaS to which the function was sent.
-            timeout (int): Timeout in secs. after which it will stop querying if the FaaS
+            timeout (int): Timeout in milisecs. after which it will stop querying if the FaaS
             was finished or not.
 
         Returns:
@@ -407,7 +411,7 @@ class ServerlessRuntimeContext:
 
         parser = FaasParser()
 
-        # Define interval to 1 sec.
+        # Define interval to 1 milisec.
         iv = 1
         # Timeout management loop.
         while timeout - iv > 0:
@@ -416,7 +420,7 @@ class ServerlessRuntimeContext:
                 if response.res != None:
                     response.res.res = parser.deserialize(response.res.res)
                 return response
-            time.sleep(iv)
+            time.sleep(iv / 1000.0)
             timeout -= iv
         return response
 
