@@ -245,7 +245,7 @@ class ServerlessRuntimeContext:
         func: Callable,
         *params,
         **kwargs,
-    ) -> ExecResponse:
+    ) -> Optional[ExecResponse]:
         """
         Perform the offload of a function to the cognit platform and wait for\
         the result.
@@ -256,6 +256,7 @@ class ServerlessRuntimeContext:
 
         Returns:
             ExecResponse: Response Code
+            or None
         """
 
         # If the Serverless Runtime client is not initialized,
@@ -268,7 +269,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return ExecResponse(ExecReturnCode.ERROR)
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
@@ -322,7 +323,7 @@ class ServerlessRuntimeContext:
         func: Callable,
         *params,
         **kwargs,
-    ) -> AsyncExecResponse:
+    ) -> Optional[AsyncExecResponse]:
         """
         Perform the offload of a function to the cognit platform without \
         blocking.
@@ -333,6 +334,7 @@ class ServerlessRuntimeContext:
 
         Returns:
             AsyncExecResponse: Async Response Code
+            or None
         """
 
         # If the Serverless Runtime client is not initialized,
@@ -345,11 +347,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return AsyncExecResponse(
-                    status=AsyncExecStatus.READY,
-                    res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                    exec_id="0",
-                )
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
@@ -376,7 +374,7 @@ class ServerlessRuntimeContext:
         self,
         Id: AsyncExecId,
         timeout: float,
-    ) -> AsyncExecResponse:
+    ) -> Optional[AsyncExecResponse]:
         """
         Wait until an asynchronous (unblocking) task is finished and ready to be
         read.
@@ -388,6 +386,7 @@ class ServerlessRuntimeContext:
 
         Returns:
             AsyncExecResponse: Will return async execution response data type.
+            or None
         """
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
@@ -399,11 +398,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return AsyncExecResponse(
-                    status=AsyncExecStatus.READY,
-                    res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                    exec_id="000-000-000",
-                )
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
