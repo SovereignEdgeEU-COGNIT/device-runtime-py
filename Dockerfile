@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 RUN python setup.py sdist   
 RUN pip install dist/cognit-0.0.0.tar.gz
 
-ENTRYPOINT ["python", "-i", "examples/minimal_offload_sync.py"]
+ENTRYPOINT ["python", "examples/minimal_offload_sync.py"]
