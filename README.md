@@ -50,15 +50,3 @@ In the `examples/` folder one can find the minimal example for running a minimal
 
 ### Tests
 The `cognit/test/`  folder holds the tests for the COGNIT module. More info about how to run them in the [README.md](cognit/test/README.md) file.
-
-
-## Docker Deployment 
-
-1. Install Docker
-Install Docker: https://docs.docker.com/get-docker/
-
-2. Deploy Docker stack
-```
-docker compose build
-docker compose up
-```

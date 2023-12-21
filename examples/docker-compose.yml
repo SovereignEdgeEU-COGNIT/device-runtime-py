@@ -4,5 +4,7 @@ services:
   device_client_runtime:
     container_name: device_client_runtime
     build:
-      context: ./
-    network_mode: host 
+      context: ./..
+      dockerfile: ./examples/Dockerfile
+    network_mode: host
+ 
