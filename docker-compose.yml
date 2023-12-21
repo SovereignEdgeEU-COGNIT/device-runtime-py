@@ -5,3 +5,4 @@ services:
     container_name: device_client_runtime
     build:
       context: ./
+    network_mode: host 
