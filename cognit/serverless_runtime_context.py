@@ -279,14 +279,14 @@ class ServerlessRuntimeContext:
 
         # Serialize the function and the params
         # TODO: Include FaaS + DaaS dependencies management.
-        # First dependency management.
-        include_deps = []
-        exclude_deps = []
-        if kwargs.__len__() > 0:
-            if "include_modules" in kwargs and type(kwargs[include_modules]) is list:
-                include_deps = kwargs["include_modules"]
-            if "exclude_modules" in kwargs and type(kwargs[exclude_modules]) is list:
-                exclude_deps = kwargs["exclude_modules"]
+        ## First dependency management.
+        #include_deps = []
+        #exclude_deps = []
+        #if kwargs.__len__() > 0:
+        #    if "include_modules" in kwargs and type(kwargs[include_modules]) is list:
+        #        include_deps = kwargs["include_modules"]
+        #    if "exclude_modules" in kwargs and type(kwargs[exclude_modules]) is list:
+        #        exclude_deps = kwargs["exclude_modules"]
 
         # TODO: Implement Hashing of function.
         func_hash = hashlib.sha256(repr(func).encode('utf-8')).hexdigest()
@@ -302,7 +302,7 @@ class ServerlessRuntimeContext:
 
         # Payload JSON definition
         offload_fc = ExecSyncParams(
-            fc=serialized_fc, params=serialized_params, lang="PY"
+            fc=serialized_fc, params=serialized_params, lang="PY", fc_hash=func_hash
         )
 
         # TODO: The client should update the sr status before offloading a function
@@ -361,9 +361,11 @@ class ServerlessRuntimeContext:
         for param in params:
             serialized_params.append(parser.serialize(param))
 
+        func_hash = hashlib.sha256(repr(func).encode('utf-8')).hexdigest()
+
         # Payload JSON definition
         offload_fc = ExecSyncParams(
-            fc=serialized_fc, params=serialized_params, lang="PY"
+            fc=serialized_fc, params=serialized_params, lang="PY", fc_hash=func_hash
         )
 
         # TODO: The client should update the sr status before offloading a function
