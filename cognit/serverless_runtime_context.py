@@ -289,7 +289,7 @@ class ServerlessRuntimeContext:
         #        exclude_deps = kwargs["exclude_modules"]
 
         # TODO: Implement Hashing of function.
-        func_hash = hashlib.sha256(repr(func).encode('utf-8')).hexdigest()
+        func_hash = hashlib.sha256(func.__code__.co_code).hexdigest()
 
 
         # TODO: Think on implementing separated serialize method for function serialization.
@@ -361,7 +361,7 @@ class ServerlessRuntimeContext:
         for param in params:
             serialized_params.append(parser.serialize(param))
 
-        func_hash = hashlib.sha256(repr(func).encode('utf-8')).hexdigest()
+        func_hash = hashlib.sha256(func.__code__.co_code).hexdigest()
 
         # Payload JSON definition
         offload_fc = ExecSyncParams(
