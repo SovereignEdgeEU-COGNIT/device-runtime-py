@@ -24,7 +24,7 @@ def sum(a: int, b: int):
 sr_conf = ServerlessRuntimeConfig()
 sr_conf.name = "Example Serverless Runtime"
 sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
-sr_conf.faas_flavour = "nature"
+sr_conf.faas_flavour = "Energy"
 
 # Request the creation of the Serverless Runtime to the COGNIT Provisioning Engine
 try:
