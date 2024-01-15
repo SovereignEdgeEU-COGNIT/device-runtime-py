@@ -174,19 +174,6 @@ class ServerlessRuntimeContext:
             )
             return StatusCode.ERROR
 
-        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
-        try:
-            if new_sr_response != None:
-                ip_version = ipadd(new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
-                if type(ip_version) == IPv4Address:
-                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
-                        + ":" + str(self.config._servl_runt_port)
-                elif type(ip_version) == IPv6Address:
-                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
-                        + "]:" + str(self.config._servl_runt_port)
-        except ValueError as e:
-            cognit_logger.warning("Serverless runtime endpoint Ip address differs from IPv4 or IPv6")
-
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
 
