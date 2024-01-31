@@ -72,6 +72,8 @@ TEST_RESPONSE_RUNNING = {
     }
 }
 
+TEST_PEC_RESPONSE = "<Response [200]>"
+
 COGNIT_CONF_PATH = (
     os.path.dirname(os.path.abspath(__file__))
     + "/../../../cognit/test/config/cognit.yml"
@@ -80,12 +82,20 @@ COGNIT_CONF_PATH = (
 
 @pytest.fixture
 def test_cognit_config() -> CognitConfig:
-    config = CognitConfig(COGNIT_CONF_PATH)
-    return config
+   config = CognitConfig(COGNIT_CONF_PATH)
+   return config
 
 
 @pytest.fixture
-def prov_eng_cli(test_cognit_config: CognitConfig) -> ProvEngineClient:
+def prov_eng_cli(test_cognit_config: CognitConfig,
+                 mocker: MockerFixture,
+    ) -> ProvEngineClient:
+    # Patch request get to return status_CODE 200 and a body with serverless runtime details
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = TEST_PEC_RESPONSE
+    mock_resp.status_code = 200
+    mocker.patch("requests.get", return_value=mock_resp)
+    
     prov_eng_cli = ProvEngineClient(config=test_cognit_config)
     return prov_eng_cli
 

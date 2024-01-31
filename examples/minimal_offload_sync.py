@@ -24,6 +24,7 @@ def sum(a: int, b: int):
 sr_conf = ServerlessRuntimeConfig()
 sr_conf.name = "Example Serverless Runtime"
 sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
+# This is where the user can define the FLAVOUR to be used within COGNIT to deploy the FaaS node.
 sr_conf.faas_flavour = "Energy"
 
 # Request the creation of the Serverless Runtime to the COGNIT Provisioning Engine
@@ -48,7 +49,7 @@ print("COGNIT Serverless Runtime ready!")
 
 # Example offloading a function call to the Serverless Runtime
 
-# call_sync sendsto execute sync.ly to the already assigned Serverless Runtime.
+# call_sync sends to execute sync.ly to the already assigned Serverless Runtime.
 # First argument is the function, followed by the parameters to execute it.
 time.sleep(30)
 result = my_cognit_runtime.call_sync(sum, 2, 2)
