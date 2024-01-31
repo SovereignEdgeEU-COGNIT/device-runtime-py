@@ -100,7 +100,7 @@ class ServerlessRuntimeConfig:
 
     scheduling_policies: List[SchedulingPolicy] = []
     name: str = ""
-    faas_flavour = "nature"
+    faas_flavour = "Nature"
     daas_flavour = "default"
 
 
