@@ -20,12 +20,14 @@ class Param(BaseModel):
 class ExecSyncParams(BaseModel):
     lang: str
     fc: str
+    fc_hash: str
     params: list[str]
 
 
 class ExecAsyncParams(BaseModel):
     lang: str
     fc: str
+    fc_hash: str
     params: list[str]
 
 

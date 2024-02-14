@@ -74,7 +74,7 @@ class ServerlessRuntimeClient:
         try:
             r = req.post(url, json=payload.dict(), timeout=REQ_TIMEOUT)
             cognit_logger.warning("Faas execute async [POST] URL: {}".format(url))
-            cognit_logger.warning("Faas execute sync payload: {}".format(payload))
+            cognit_logger.warning("Faas execute async payload: {}".format(payload))
             # Check if status code is 200
             response = None
             if r.status_code == 200:
