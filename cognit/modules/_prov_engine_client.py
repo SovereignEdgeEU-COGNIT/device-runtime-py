@@ -34,6 +34,15 @@ class ProvEngineClient:
         self.endpoint = "http://{0}:{1}".format(
             self.config.prov_engine_endpoint, self.config.prov_engine_port
         )
+        self.latency_to_pe = 0.0
+        r = req.get(
+            self.endpoint,
+            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+            timeout=REQ_TIMEOUT,
+        )
+        if r != None:
+            self.latency_to_pe = r.elapsed.total_seconds()
+            cognit_logger.warning("Latency to Provisioning Engine is: {0}".format(self.latency_to_pe))
 
     def create(
         self, serverless_runtime: ServerlessRuntime
@@ -49,7 +58,7 @@ class ProvEngineClient:
         response = None
 
         url = "{}/{}".format(self.endpoint, SR_RESOURCE_ENDPOINT)
-        
+
         aux_dict = filter_empty_values(serverless_runtime.dict())
         cognit_logger.warning(str(aux_dict))
 
