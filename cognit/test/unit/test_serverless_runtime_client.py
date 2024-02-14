@@ -17,11 +17,13 @@ def sum(a: int, b: int):
 def serialized_fc() -> ExecSyncParams:
     parser = FaasParser()
     serialized_fc = parser.serialize(sum)
+    mock_hash = "000-000-000"
+    serialized_fc_hash = parser.serialize(mock_hash)
     serialized_params = []
     serialized_params.append(parser.serialize(2))
     serialized_params.append(parser.serialize(2))
 
-    fc = ExecSyncParams(fc=serialized_fc, lang="PY", params=serialized_params)
+    fc = ExecSyncParams(fc=serialized_fc, fc_hash=serialized_fc_hash, lang="PY", params=serialized_params)
 
     return fc
 
