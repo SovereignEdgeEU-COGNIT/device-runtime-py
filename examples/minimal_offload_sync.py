@@ -17,6 +17,7 @@ from cognit import (
 
 def sum(a: int, b: int):
     #time.sleep(20)
+    print("This is a test")
     return a + b
 
 
@@ -51,7 +52,6 @@ print("COGNIT Serverless Runtime ready!")
 
 # call_sync sends to execute sync.ly to the already assigned Serverless Runtime.
 # First argument is the function, followed by the parameters to execute it.
-time.sleep(30)
 result = my_cognit_runtime.call_sync(sum, 2, 2)
 
 print("Offloaded function result", result)

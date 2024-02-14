@@ -80,11 +80,12 @@ class EnergySchedulingPolicy(SchedulingPolicy):
             the serverless runtime be powered by renewable energy. Defaults to 0.
         """
         super().__init__()
-        self.policy_name = "energy"
+        self.policy_name = "ENERGY"
         self.energy_percentage = energy_percentage
 
     def serialize_requirements(self) -> str:
-        return '{"energy":' + str(self.energy_percentage) + "}"
+        #return "[ENERGY=" + str(self.energy_percentage) + "]"
+        return "ENERGY_RENEWABLE=YES"
 
 
 class ServerlessRuntimeConfig:
@@ -148,11 +149,16 @@ class ServerlessRuntimeContext:
             FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
+        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements} are NOT being sent to COGNIT Scheduler.')
+        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until Schduler is working full steam.')
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
-            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation),
-            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation, LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
+                    LATENCY_TO_PE=float(self.pec.latency_to_pe)),
+            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            SCHEDULING=Scheduling(POLICY=policies),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
