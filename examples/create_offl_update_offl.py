@@ -25,6 +25,10 @@ def mult(a: int, b: int):
     print("This mult is a test")
     return a * b * a * b
 
+def heavy_lifting(x):
+    import math
+    return math.factorial(x)
+
 # Configure the Serverless Runtime requeriments
 sr_conf = ServerlessRuntimeConfig()
 sr_conf.name = "Example Serverless Runtime"
