@@ -492,7 +492,7 @@ class ServerlessRuntimeContext:
         while timeout - iv > 0:
             response = self.src.wait(Id.faas_task_uuid)
             if response != None and response.status == AsyncExecStatus.READY:
-                if response.res != None:
+                if response.res.res != None:
                     response.res.res = parser.deserialize(response.res.res)
                 return response
             time.sleep(iv / 1000.0)
