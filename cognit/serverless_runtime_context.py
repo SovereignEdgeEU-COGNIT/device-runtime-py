@@ -103,7 +103,8 @@ class ServerlessRuntimeConfig:
     name: str = ""
     faas_flavour = "Nature"
     daas_flavour = "default"
-
+    geolocation = str(Geolocator().geo)
+    lat_to_pe = None
 
 class ServerlessRuntimeContext:
     def __init__(
@@ -131,8 +132,6 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
-        geoloc = Geolocator()
-        geolocation = str(geoloc.geo)
 
         for policy in serveless_runtime_config.scheduling_policies:
             policies += policy.policy_name
@@ -153,13 +152,17 @@ class ServerlessRuntimeContext:
                 are NOT being sent to COGNIT Scheduler.')
         cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
                 Schduler is working full steam.')
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
             #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
-            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
-                    LATENCY_TO_PE=float(self.pec.latency_to_pe)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
             #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
             SCHEDULING=Scheduling(POLICY=policies),
         )
@@ -229,14 +232,20 @@ class ServerlessRuntimeContext:
                 are NOT being sent to COGNIT Scheduler.')
         cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
                 Scheduler is working full steam.')
+
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
+
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             ID=sr_id,
             FAAS=faas_config,
             #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
-            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
-                    LATENCY_TO_PE=float(self.pec.latency_to_pe)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
             #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
             SCHEDULING=Scheduling(POLICY=policies),
         )
