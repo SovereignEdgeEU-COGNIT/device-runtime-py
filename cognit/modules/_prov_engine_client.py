@@ -37,12 +37,16 @@ class ProvEngineClient:
         )
         self.latency_endp = f'http://{self.config.prov_engine_endpoint}'
         self.latency_to_pe = 0.0
-        cognit_logger.debug(f'Create GET\'s URL for latency e: {self.endpoint}')
-        r = req.get(
-            self.latency_endp,
-            auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
-            timeout=REQ_TIMEOUT,
-        )
+        cognit_logger.debug(f'GET request\'s URL for extracting latency to PE (default to port 80): {self.latency_endp}')
+        try:
+            r = req.get(
+                self.latency_endp,
+                auth=(self.config._prov_engine_pe_usr, self.config._prov_engine_pe_pwd),
+                timeout=REQ_TIMEOUT,
+            )
+        except Exception as e:
+            cognit_logger.error(f'Error reaching PE on default port and endpoint {self.latency_endp}: {e}')
+            raise Exception(f'Error getting PE latency')
         cognit_logger.debug(f'Response from GET for latency Create: {r}')
         if r != None:
             self.latency_to_pe = r.elapsed.total_seconds()
