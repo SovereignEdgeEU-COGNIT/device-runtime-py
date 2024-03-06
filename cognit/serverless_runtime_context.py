@@ -103,7 +103,8 @@ class ServerlessRuntimeConfig:
     name: str = ""
     faas_flavour = "Nature"
     daas_flavour = "default"
-
+    geolocation = str(Geolocator().geo)
+    lat_to_pe = None
 
 class ServerlessRuntimeContext:
     def __init__(
@@ -149,14 +150,21 @@ class ServerlessRuntimeContext:
             FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
-        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements} are NOT being sent to COGNIT Scheduler.')
-        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until Schduler is working full steam.')
+        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
+                are NOT being sent to COGNIT Scheduler.')
+        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
+                Schduler is working full steam.')
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
-            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation, LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
-            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
-                    LATENCY_TO_PE=float(self.pec.latency_to_pe)),
+            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
+            #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
             #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
             SCHEDULING=Scheduling(POLICY=policies),
         )
@@ -174,7 +182,91 @@ class ServerlessRuntimeContext:
             FaaSState.NO_STATE,
         ):
             cognit_logger.error(
-                "Serverless Runtime creation request failed: returned state is not PENDING ({0})".format(
+                "Serverless Runtime creation request failed: returned state\
+                        is not PENDING ({0})".format(
+                    new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
+                )
+            )
+            return StatusCode.ERROR
+
+        # Store the Serverless Runtime instance
+        self.sr_instance = new_sr_response
+
+        return StatusCode.SUCCESS
+
+    def update(
+        self,
+        serveless_runtime_config: ServerlessRuntimeConfig,
+        sr_id: int=0,
+    ) -> StatusCode:
+        ## Create FaasConfig scheduling policies from the user provided objects
+        policies = ""
+        requirements = ""
+        geoloc = Geolocator()
+        geolocation = str(geoloc.geo)
+
+        for policy in serveless_runtime_config.scheduling_policies:
+            policies += policy.policy_name
+            requirements += policy.serialize_requirements()
+            # Add only comma if is the last one
+            if policy != serveless_runtime_config.scheduling_policies[-1]:
+                policies += ","
+                requirements += ","
+
+        faas_config = FaaSConfig(
+            name=serveless_runtime_config.name,
+            policies=policies,
+            requirements=requirements,
+            # FLAVOUR should not be updated on the fly for now.
+            FLAVOUR="",
+            #FLAVOUR=serveless_runtime_config.faas_flavour,
+            ENDPOINT=""
+        )
+
+        # If the user is trying to change the Serverless Runtime ID, warn him
+        # Otherwise, keep the current ID
+        if sr_id != 0 and self.sr_instance.SERVERLESS_RUNTIME.ID != sr_id:
+            cognit_logger.warning("You are changing the Serverless Runtime ID!")
+        else:
+            sr_id = self.sr_instance.SERVERLESS_RUNTIME.ID
+
+        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
+                are NOT being sent to COGNIT Scheduler.')
+        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
+                Scheduler is working full steam.')
+
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
+
+        new_sr_data = ServerlessRuntimeData(
+            NAME=serveless_runtime_config.name,
+            ID=sr_id,
+            FAAS=faas_config,
+            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
+            #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
+            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            SCHEDULING=Scheduling(POLICY=policies),
+        )
+
+        update_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
+
+        new_sr_response = self.pec.update(update_sr_request)
+
+        if new_sr_response == None:
+            cognit_logger.error("Serverless Runtime update failed")
+            return StatusCode.ERROR
+
+        if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
+            FaaSState.PENDING,
+            FaaSState.RUNNING,
+            FaaSState.NO_STATE,
+        ):
+            cognit_logger.error(
+                "Serverless Runtime update failed: returned state is not PENDING ({0})".format(
                     new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
                 )
             )
@@ -204,18 +296,22 @@ class ServerlessRuntimeContext:
         sr_response = self.pec.retrieve(self.sr_instance.SERVERLESS_RUNTIME.ID)
 
         # Update the Serverless Runtime cached instance
-        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
+        # Make sure that endpoint's URL contains protocol and port on it
+        # and IP version compliant.
         try:
             if sr_response != None:
                 ip_version = ipadd(sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
                 if type(ip_version) == IPv4Address:
-                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto\
+                            + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
                         + ":" + str(self.config._servl_runt_port)
                 elif type(ip_version) == IPv6Address:
-                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto\
+                            + "["+ sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
                         + "]:" + str(self.config._servl_runt_port)
         except ValueError as e:
-            cognit_logger.warning("Serverless runtime endpoint's Ip address differs from IPv4 or IPv6")
+            cognit_logger.warning("Serverless runtime endpoint's Ip address\
+                    differs from IPv4 or IPv6")
 
         # Update the Serverless Runtime instance
         self.sr_instance = sr_response
@@ -376,8 +472,8 @@ class ServerlessRuntimeContext:
 
         Args:
             Id (AsyncExecId): ID of the FaaS to which the function was sent.
-            timeout (int): Timeout in milisecs. after which it will stop querying if the FaaS
-            was finished or not.
+            timeout (int): Timeout in milisecs. after which it will stop
+            querying if the FaaS was finished or not.
 
         Returns:
             AsyncExecResponse: Will return async execution response data type.
@@ -407,7 +503,7 @@ class ServerlessRuntimeContext:
         while timeout - iv > 0:
             response = self.src.wait(Id.faas_task_uuid)
             if response != None and response.status == AsyncExecStatus.READY:
-                if response.res != None:
+                if response.res.res != None:
                     response.res.res = parser.deserialize(response.res.res)
                 return response
             time.sleep(iv / 1000.0)
