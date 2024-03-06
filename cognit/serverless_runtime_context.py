@@ -132,6 +132,8 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
+        geoloc = Geolocator()
+        geolocation = str(geoloc.geo)
 
         for policy in serveless_runtime_config.scheduling_policies:
             policies += policy.policy_name
