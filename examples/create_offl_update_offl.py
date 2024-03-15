@@ -32,7 +32,7 @@ def heavy_lifting(x):
 # Configure the Serverless Runtime requeriments
 sr_conf = ServerlessRuntimeConfig()
 sr_conf.name = "Example Serverless Runtime"
-sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
+sr_conf.scheduling_policies = [EnergySchedulingPolicy(80)]
 # This is where the user can define the FLAVOUR to be used within COGNIT to deploy the FaaS node.
 sr_conf.faas_flavour = "Energy"
 
@@ -59,7 +59,7 @@ print("COGNIT Serverless Runtime ready!")
 # Update the Device info and requirements of the SR.
 sr_conf = ServerlessRuntimeConfig()
 sr_conf.name = "Updated Serverless Runtime"
-sr_conf.scheduling_policies = [EnergySchedulingPolicy(80)]
+sr_conf.scheduling_policies = [EnergySchedulingPolicy(30)]
 
 result = my_cognit_runtime.call_sync(sum, 2, 2)
 print("Pre-Update offloaded function result", result)
@@ -79,6 +79,6 @@ result = my_cognit_runtime.call_sync(mult, 4, 5)
 print("Post-Update offloaded function result", result)
 
 # This sends a request to delete this COGNIT context.
-my_cognit_runtime.delete()
+#my_cognit_runtime.delete()
 
 print("COGNIT Serverless Runtime deleted!")

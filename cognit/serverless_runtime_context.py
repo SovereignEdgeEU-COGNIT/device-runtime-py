@@ -80,13 +80,17 @@ class EnergySchedulingPolicy(SchedulingPolicy):
             the serverless runtime be powered by renewable energy. Defaults to 0.
         """
         super().__init__()
-        self.policy_name = "ENERGY"
+        #self.policy_name = "ENERGY"
+        self.policy_name = ""
         self.energy_percentage = energy_percentage
 
     def serialize_requirements(self) -> str:
         #return "[ENERGY=" + str(self.energy_percentage) + "]"
-        return "ENERGY_RENEWABLE=YES"
-
+        #return "ENERGY_RENEWABLE=YES"
+        if self.energy_percentage>50:
+            return "ENERGY_RENEWABLE=yes"
+        else:
+            return ""
 
 class ServerlessRuntimeConfig:
     """
@@ -132,8 +136,6 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
-        geoloc = Geolocator()
-        geolocation = str(geoloc.geo)
 
         for policy in serveless_runtime_config.scheduling_policies:
             policies += policy.policy_name
@@ -165,8 +167,8 @@ class ServerlessRuntimeContext:
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
             DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
                     geolocation, LATENCY_TO_PE = l),
-            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
-            SCHEDULING=Scheduling(POLICY=policies),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -248,8 +250,8 @@ class ServerlessRuntimeContext:
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
             DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
                     geolocation, LATENCY_TO_PE = l),
-            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
-            SCHEDULING=Scheduling(POLICY=policies),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
         )
 
         update_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
