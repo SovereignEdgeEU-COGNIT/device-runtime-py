@@ -11,7 +11,7 @@ FAAS_EXECUTE_SYNC_ENDPOINT = "faas/execute-sync"
 FAAS_EXECUTE_ASYNC_ENDPOINT = "faas/execute-async"
 FAAS_WAIT_ENDPOINT = "faas/xx-xxx-xx/status"
 
-REQ_TIMEOUT = 5
+REQ_TIMEOUT = 15
 
 
 class ServerlessRuntimeClient:
@@ -46,7 +46,7 @@ class ServerlessRuntimeClient:
                 response = pydantic.parse_obj_as(ExecResponse, r.json())
 
             cognit_logger.warning("Faas execute sync [POST] URL: {}".format(url))
-            cognit_logger.warning("Faas execute sync payload: {}".format(payload))
+            #cognit_logger.warning("Faas execute sync payload: {}".format(payload))
             # Return the status code of the response
             if response == None:
                 return ExecResponse(ret_code=ExecReturnCode.ERROR, err=r.status_code)
@@ -55,7 +55,7 @@ class ServerlessRuntimeClient:
         except Exception as e:
             cognit_logger.error("Couldn't run sync request; {0}".format(e))
             cognit_logger.error("Faas execute sync [POST] URL: {}".format(url))
-            cognit_logger.error("Faas execute sync payload: {}".format(payload))
+            #cognit_logger.error("Faas execute sync payload: {}".format(payload))
             return ExecResponse(ret_code=ExecReturnCode.ERROR)
 
     def faas_execute_async(self, payload: ExecSyncParams) -> AsyncExecResponse:
@@ -74,7 +74,7 @@ class ServerlessRuntimeClient:
         try:
             r = req.post(url, json=payload.dict(), timeout=REQ_TIMEOUT)
             cognit_logger.warning("Faas execute async [POST] URL: {}".format(url))
-            cognit_logger.warning("Faas execute async payload: {}".format(payload))
+            #cognit_logger.warning("Faas execute async payload: {}".format(payload))
             # Check if status code is 200
             response = None
             if r.status_code == 200:
