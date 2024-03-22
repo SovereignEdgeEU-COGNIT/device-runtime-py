@@ -80,17 +80,15 @@ class EnergySchedulingPolicy(SchedulingPolicy):
             the serverless runtime be powered by renewable energy. Defaults to 0.
         """
         super().__init__()
-        #self.policy_name = "ENERGY"
-        self.policy_name = ""
+        self.policy_name = "ENERGY"
         self.energy_percentage = energy_percentage
 
     def serialize_requirements(self) -> str:
         #return "[ENERGY=" + str(self.energy_percentage) + "]"
-        #return "ENERGY_RENEWABLE=YES"
         if self.energy_percentage>50:
             return "ENERGY_RENEWABLE=yes"
         else:
-            return ""
+            return None
 
 class ServerlessRuntimeConfig:
     """
@@ -138,12 +136,16 @@ class ServerlessRuntimeContext:
         requirements = ""
 
         for policy in serveless_runtime_config.scheduling_policies:
-            policies += policy.policy_name
-            requirements += policy.serialize_requirements()
-            # Add only comma if is the last one
-            if policy != serveless_runtime_config.scheduling_policies[-1]:
-                policies += ","
-                requirements += ","
+            cognit_logger.warning(f"POLICY {policy.policy_name}: {policy.serialize_requirements()}")
+            if policy.serialize_requirements() != None:
+                policies += policy.policy_name
+                requirements += policy.serialize_requirements()
+                # Add only comma if is the last one
+                if policy != serveless_runtime_config.scheduling_policies[-1]:
+                    policies += ","
+                    requirements += ","
+            else:
+                requirements = None
 
         faas_config = FaaSConfig(
             name=serveless_runtime_config.name,
@@ -152,10 +154,6 @@ class ServerlessRuntimeContext:
             FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
-        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
-                are NOT being sent to COGNIT Scheduler.')
-        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
-                Schduler is working full steam.')
         if serveless_runtime_config.lat_to_pe is not None:
             l = serveless_runtime_config.lat_to_pe
         else:
@@ -232,11 +230,6 @@ class ServerlessRuntimeContext:
         else:
             sr_id = self.sr_instance.SERVERLESS_RUNTIME.ID
 
-        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
-                are NOT being sent to COGNIT Scheduler.')
-        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
-                Scheduler is working full steam.')
-
         if serveless_runtime_config.lat_to_pe is not None:
             l = serveless_runtime_config.lat_to_pe
         else:
@@ -263,7 +256,7 @@ class ServerlessRuntimeContext:
             return StatusCode.ERROR
 
         if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
-            FaaSState.PENDING,
+            FaaSState.UPDATING,
             FaaSState.RUNNING,
             FaaSState.NO_STATE,
         ):
@@ -276,6 +269,7 @@ class ServerlessRuntimeContext:
 
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
+        cognit_logger.warning(f"Updated Sr ionstance: {self.sr_instance}")
 
         return StatusCode.SUCCESS
 
@@ -317,6 +311,7 @@ class ServerlessRuntimeContext:
 
         # Update the Serverless Runtime instance
         self.sr_instance = sr_response
+        cognit_logger.warning(f"Status Sr ionstance: {self.sr_instance}")
 
         return self.sr_instance.SERVERLESS_RUNTIME.FAAS.STATE
 

@@ -10,7 +10,7 @@ class FaaSState(str, Enum):
     """
 
     PENDING = "PENDING"
-    # RUNNING = "ACTIVE"
+    UPDATING = "UPDATING"
     RUNNING = "RUNNING"
     NO_STATE = ""
 
