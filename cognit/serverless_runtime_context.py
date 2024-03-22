@@ -269,7 +269,6 @@ class ServerlessRuntimeContext:
 
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
-        cognit_logger.warning(f"Updated Sr ionstance: {self.sr_instance}")
 
         return StatusCode.SUCCESS
 
@@ -311,7 +310,6 @@ class ServerlessRuntimeContext:
 
         # Update the Serverless Runtime instance
         self.sr_instance = sr_response
-        cognit_logger.warning(f"Status Sr ionstance: {self.sr_instance}")
 
         return self.sr_instance.SERVERLESS_RUNTIME.FAAS.STATE
 
