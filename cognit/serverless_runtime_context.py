@@ -85,8 +85,10 @@ class EnergySchedulingPolicy(SchedulingPolicy):
 
     def serialize_requirements(self) -> str:
         #return "[ENERGY=" + str(self.energy_percentage) + "]"
-        return "ENERGY_RENEWABLE=YES"
-
+        if self.energy_percentage>50:
+            return "ENERGY_RENEWABLE=yes"
+        else:
+            return None
 
 class ServerlessRuntimeConfig:
     """
@@ -132,16 +134,18 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
-        geoloc = Geolocator()
-        geolocation = str(geoloc.geo)
 
         for policy in serveless_runtime_config.scheduling_policies:
-            policies += policy.policy_name
-            requirements += policy.serialize_requirements()
-            # Add only comma if is the last one
-            if policy != serveless_runtime_config.scheduling_policies[-1]:
-                policies += ","
-                requirements += ","
+            cognit_logger.warning(f"POLICY {policy.policy_name}: {policy.serialize_requirements()}")
+            if policy.serialize_requirements() != None:
+                policies += policy.policy_name
+                requirements += policy.serialize_requirements()
+                # Add only comma if is the last one
+                if policy != serveless_runtime_config.scheduling_policies[-1]:
+                    policies += ","
+                    requirements += ","
+            else:
+                requirements = None
 
         faas_config = FaaSConfig(
             name=serveless_runtime_config.name,
@@ -150,10 +154,6 @@ class ServerlessRuntimeContext:
             FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
-        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
-                are NOT being sent to COGNIT Scheduler.')
-        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
-                Schduler is working full steam.')
         if serveless_runtime_config.lat_to_pe is not None:
             l = serveless_runtime_config.lat_to_pe
         else:
@@ -165,8 +165,8 @@ class ServerlessRuntimeContext:
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
             DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
                     geolocation, LATENCY_TO_PE = l),
-            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
-            SCHEDULING=Scheduling(POLICY=policies),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -230,11 +230,6 @@ class ServerlessRuntimeContext:
         else:
             sr_id = self.sr_instance.SERVERLESS_RUNTIME.ID
 
-        cognit_logger.warning(f'¡ATTENTION! Your Requirements {requirements}\
-                are NOT being sent to COGNIT Scheduler.')
-        cognit_logger.warning(f'¡ATTENTION! This is a temporary measure until\
-                Scheduler is working full steam.')
-
         if serveless_runtime_config.lat_to_pe is not None:
             l = serveless_runtime_config.lat_to_pe
         else:
@@ -248,8 +243,8 @@ class ServerlessRuntimeContext:
             #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
             DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
                     geolocation, LATENCY_TO_PE = l),
-            #SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
-            SCHEDULING=Scheduling(POLICY=policies),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
         )
 
         update_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -261,7 +256,7 @@ class ServerlessRuntimeContext:
             return StatusCode.ERROR
 
         if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
-            FaaSState.PENDING,
+            FaaSState.UPDATING,
             FaaSState.RUNNING,
             FaaSState.NO_STATE,
         ):
