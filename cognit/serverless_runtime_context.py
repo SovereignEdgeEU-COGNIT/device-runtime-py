@@ -398,7 +398,7 @@ class ServerlessRuntimeContext:
         if resp.res is not None:
             resp.res = parser.deserialize(resp.res)
         else:
-            cognit_logger.error("Sync request error; {0}".format(resp.err))
+            cognit_logger.error("Sync request error, cause might be a timeout in HTTP request; {0}".format(resp.err))
 
         return resp
 
