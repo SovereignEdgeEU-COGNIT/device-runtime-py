@@ -1,6 +1,10 @@
 # CHANGELOG
 
 ## [Unreleased]
+
+## [release-cognit-1.0]
+- Release M15.
+
 ### Added
 - Update method.
 - Geolocation of the device.
