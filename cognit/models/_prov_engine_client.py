@@ -10,7 +10,7 @@ class FaaSState(str, Enum):
     """
 
     PENDING = "PENDING"
-    # RUNNING = "ACTIVE"
+    UPDATING = "UPDATING"
     RUNNING = "RUNNING"
     NO_STATE = ""
 
@@ -76,14 +76,14 @@ class DaaSConfig(BaseModel):
 
 
 class Scheduling(BaseModel):
-    POLICY: Optional[str] = Field(
-        default="",
-        description="String describing the policy applied to scheduling. Eg: “energy, latency” will optimise the placement according to those two criteria",
-    )
-    #REQUIREMENTS: Optional[str] = Field(
+    #POLICY: Optional[str] = Field(
     #    default="",
-    #    description="String describing the requirements of the placement. For instance, “energy_renewal” will only consider hypervisors powered by renewable energy.",
+    #    description="String describing the policy applied to scheduling. Eg: “energy, latency” will optimise the placement according to those two criteria",
     #)
+    REQUIREMENTS: Optional[str] = Field(
+        default="",
+        description="String describing the requirements of the placement. For instance, “energy_renewal” will only consider hypervisors powered by renewable energy.",
+    )
 
 
 class DeviceInfo(BaseModel):
