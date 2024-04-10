@@ -14,3 +14,6 @@
 - Scheduling field schema.
 ### Fixed
 - RUNNING state issue (needed time.sleep after RUNNING state was reported from PE)
+
+## [1.0.0]
+- Initial release (M9)
