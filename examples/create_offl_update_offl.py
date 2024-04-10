@@ -67,15 +67,13 @@ print("Pre-Update offloaded function result", result)
 ## Use this if you want to update any SR specifying the ID.
 #my_cognit_runtime.update(sr_conf, 2395)
 # This will update the SR of the context.
+print("Performing update...")
 my_cognit_runtime.update(sr_conf)
 
 # First, check status is != RUNNING, as there is some lag when reporting in UPDATING state.
-print(f"VM state: {my_cognit_runtime.status}")
-time.sleep(3)
-print(f"VM state: {my_cognit_runtime.status}")
-time.sleep(3)
-print(f"VM state: {my_cognit_runtime.status}")
-time.sleep(3)
+while my_cognit_runtime.status == FaaSState.RUNNING:
+    print(f"VM state: {my_cognit_runtime.status}")
+    time.sleep(2)
 while my_cognit_runtime.status != FaaSState.RUNNING:
     print(f"VM state: {my_cognit_runtime.status}")
     time.sleep(3)
@@ -91,6 +89,6 @@ result = my_cognit_runtime.call_sync(mult, 4, 5)
 print("Post-Update offloaded function result", result)
 
 # This sends a request to delete this COGNIT context.
-#my_cognit_runtime.delete()
+my_cognit_runtime.delete()
 
 print("COGNIT Serverless Runtime deleted!")
