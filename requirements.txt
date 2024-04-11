@@ -6,6 +6,7 @@ cloudpickle==2.2.1
 coverage==7.2.7
 exceptiongroup==1.1.1
 fastapi==0.95.2
+geocoder==1.38.1
 greenlet==2.0.2
 h11==0.14.0
 httpcore==0.17.2

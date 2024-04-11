@@ -1,10 +1,13 @@
-import time, re
+import time, re, hashlib
+import geocoder
 from enum import Enum
 from typing import Callable, List, Optional
 from ipaddress import ip_address as ipadd, IPv4Address, IPv6Address
 
 from cognit.models._prov_engine_client import (
     Empty,
+    DeviceInfo,
+    Scheduling,
     FaaSConfig,
     FaaSState,
     ServerlessRuntime,
@@ -33,6 +36,23 @@ class StatusCode(Enum):
     ERROR = 1
     PENDING = 2
 
+class Geolocator:
+    """
+    Geolocator representation:
+
+    Args:
+        None
+    Properties:
+        country (str): Country name
+        city (str): City name
+    """
+
+    def __init__(self):
+        self.country = ""
+        self.city = ""
+        g = geocoder.ip("me")
+        self.geo = g.geojson["features"][0]["properties"]["raw"]
+        cognit_logger.warning(str(g.geojson["features"][0]["properties"]["raw"]))
 
 class SchedulingPolicy:
     """
@@ -60,12 +80,15 @@ class EnergySchedulingPolicy(SchedulingPolicy):
             the serverless runtime be powered by renewable energy. Defaults to 0.
         """
         super().__init__()
-        self.policy_name = "energy"
+        self.policy_name = "ENERGY"
         self.energy_percentage = energy_percentage
 
     def serialize_requirements(self) -> str:
-        return '{"energy":' + str(self.energy_percentage) + "}"
-
+        #return "[ENERGY=" + str(self.energy_percentage) + "]"
+        if self.energy_percentage>50:
+            return "ENERGY_RENEWABLE=yes"
+        else:
+            return None
 
 class ServerlessRuntimeConfig:
     """
@@ -80,7 +103,10 @@ class ServerlessRuntimeConfig:
 
     scheduling_policies: List[SchedulingPolicy] = []
     name: str = ""
-
+    faas_flavour = "Nature"
+    daas_flavour = "default"
+    geolocation = str(Geolocator().geo)
+    lat_to_pe = None
 
 class ServerlessRuntimeContext:
     def __init__(
@@ -110,24 +136,37 @@ class ServerlessRuntimeContext:
         requirements = ""
 
         for policy in serveless_runtime_config.scheduling_policies:
-            policies += policy.policy_name
-            requirements += policy.serialize_requirements()
-            # Add only comma if is the last one
-            if policy != serveless_runtime_config.scheduling_policies[-1]:
-                policies += ","
-                requirements += ","
+            cognit_logger.warning(f"POLICY {policy.policy_name}: {policy.serialize_requirements()}")
+            if policy.serialize_requirements() != None:
+                policies += policy.policy_name
+                requirements += policy.serialize_requirements()
+                # Add only comma if is the last one
+                if policy != serveless_runtime_config.scheduling_policies[-1]:
+                    policies += ","
+                    requirements += ","
+            else:
+                requirements = None
 
         faas_config = FaaSConfig(
             name=serveless_runtime_config.name,
             policies=policies,
             requirements=requirements,
+            FLAVOUR=serveless_runtime_config.faas_flavour,
         )
 
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
         new_sr_data = ServerlessRuntimeData(
             NAME=serveless_runtime_config.name,
             FAAS=faas_config,
-            DEVICE_INFO=Empty(),
-            SCHEDULING=Empty(),
+            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
+            #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
         )
 
         new_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
@@ -143,24 +182,90 @@ class ServerlessRuntimeContext:
             FaaSState.NO_STATE,
         ):
             cognit_logger.error(
-                "Serverless Runtime creation request failed: returned state is not PENDING ({0})".format(
+                "Serverless Runtime creation request failed: returned state\
+                        is not PENDING ({0})".format(
                     new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
                 )
             )
             return StatusCode.ERROR
-        
-        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
-        try:
-            if new_sr_response != None:
-                ip_version = ipadd(new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
-                if type(ip_version) == IPv4Address:
-                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
-                        + ":" + str(self.config._servl_runt_port)
-                elif type(ip_version) == IPv6Address:
-                    new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ new_sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
-                        + "]:" + str(self.config._servl_runt_port)
-        except ValueError as e:
-            cognit_logger.warning("Serverless runtime endpoint Ip address differs from IPv4 or IPv6")
+
+        # Store the Serverless Runtime instance
+        self.sr_instance = new_sr_response
+
+        return StatusCode.SUCCESS
+
+    def update(
+        self,
+        serveless_runtime_config: ServerlessRuntimeConfig,
+        sr_id: int=0,
+    ) -> StatusCode:
+        ## Create FaasConfig scheduling policies from the user provided objects
+        policies = ""
+        requirements = ""
+        geoloc = Geolocator()
+        geolocation = str(geoloc.geo)
+
+        for policy in serveless_runtime_config.scheduling_policies:
+            policies += policy.policy_name
+            requirements += policy.serialize_requirements()
+            # Add only comma if is the last one
+            if policy != serveless_runtime_config.scheduling_policies[-1]:
+                policies += ","
+                requirements += ","
+
+        faas_config = FaaSConfig(
+            name=serveless_runtime_config.name,
+            policies=policies,
+            requirements=requirements,
+            # FLAVOUR should not be updated on the fly for now.
+            FLAVOUR="",
+            #FLAVOUR=serveless_runtime_config.faas_flavour,
+            ENDPOINT=""
+        )
+
+        # If the user is trying to change the Serverless Runtime ID, warn him
+        # Otherwise, keep the current ID
+        if sr_id != 0 and self.sr_instance.SERVERLESS_RUNTIME.ID != sr_id:
+            cognit_logger.warning("You are changing the Serverless Runtime ID!")
+        else:
+            sr_id = self.sr_instance.SERVERLESS_RUNTIME.ID
+
+        if serveless_runtime_config.lat_to_pe is not None:
+            l = serveless_runtime_config.lat_to_pe
+        else:
+            l = float(self.pec.latency_to_pe)
+
+        new_sr_data = ServerlessRuntimeData(
+            NAME=serveless_runtime_config.name,
+            ID=sr_id,
+            FAAS=faas_config,
+            #DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=geolocation,\
+            #        LATENCY_TO_PE=int(float(self.pec.latency_to_pe) * 1000)),
+            DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION=serveless_runtime_config.\
+                    geolocation, LATENCY_TO_PE = l),
+            SCHEDULING=Scheduling(POLICY=policies, REQUIREMENTS=requirements),
+            #SCHEDULING=Scheduling(POLICY=policies),
+        )
+
+        update_sr_request = ServerlessRuntime(SERVERLESS_RUNTIME=new_sr_data)
+
+        new_sr_response = self.pec.update(update_sr_request)
+
+        if new_sr_response == None:
+            cognit_logger.error("Serverless Runtime update failed")
+            return StatusCode.ERROR
+
+        if not new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE in (
+            FaaSState.UPDATING,
+            FaaSState.RUNNING,
+            FaaSState.NO_STATE,
+        ):
+            cognit_logger.error(
+                "Serverless Runtime update failed: returned state is not PENDING ({0})".format(
+                    new_sr_response.SERVERLESS_RUNTIME.FAAS.STATE
+                )
+            )
+            return StatusCode.ERROR
 
         # Store the Serverless Runtime instance
         self.sr_instance = new_sr_response
@@ -186,18 +291,22 @@ class ServerlessRuntimeContext:
         sr_response = self.pec.retrieve(self.sr_instance.SERVERLESS_RUNTIME.ID)
 
         # Update the Serverless Runtime cached instance
-        # Make sure that endpoint's URL contains protocol and port on it and IP version compliant.
+        # Make sure that endpoint's URL contains protocol and port on it
+        # and IP version compliant.
         try:
             if sr_response != None:
                 ip_version = ipadd(sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT)
                 if type(ip_version) == IPv4Address:
-                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto\
+                            + sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
                         + ":" + str(self.config._servl_runt_port)
                 elif type(ip_version) == IPv6Address:
-                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto + "["+ sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
+                    sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT = self.url_proto\
+                            + "["+ sr_response.SERVERLESS_RUNTIME.FAAS.ENDPOINT \
                         + "]:" + str(self.config._servl_runt_port)
         except ValueError as e:
-            cognit_logger.warning("Serverless runtime endpoint's Ip address differs from IPv4 or IPv6")
+            cognit_logger.warning("Serverless runtime endpoint's Ip address\
+                    differs from IPv4 or IPv6")
 
         # Update the Serverless Runtime instance
         self.sr_instance = sr_response
@@ -219,8 +328,8 @@ class ServerlessRuntimeContext:
         self,
         func: Callable,
         *params,
-        # **kwargs,
-    ) -> ExecResponse:
+        **kwargs,
+    ) -> Optional[ExecResponse]:
         """
         Perform the offload of a function to the cognit platform and wait for\
         the result.
@@ -231,6 +340,7 @@ class ServerlessRuntimeContext:
 
         Returns:
             ExecResponse: Response Code
+            or None
         """
 
         # If the Serverless Runtime client is not initialized,
@@ -243,7 +353,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return ExecResponse(ExecReturnCode.ERROR)
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
@@ -251,7 +361,24 @@ class ServerlessRuntimeContext:
 
         parser = FaasParser()
 
-        # Serialize the function an the params
+        # Serialize the function and the params
+        # TODO: Include FaaS + DaaS dependencies management.
+        ## First dependency management.
+        #include_deps = []
+        #exclude_deps = []
+        #if kwargs.__len__() > 0:
+        #    if "include_modules" in kwargs and type(kwargs[include_modules]) is list:
+        #        include_deps = kwargs["include_modules"]
+        #    if "exclude_modules" in kwargs and type(kwargs[exclude_modules]) is list:
+        #        exclude_deps = kwargs["exclude_modules"]
+
+        # TODO: Implement Hashing of function.
+        func_hash = hashlib.sha256(func.__code__.co_code).hexdigest()
+
+
+        # TODO: Think on implementing separated serialize method for function serialization.
+        # for better dependency management.
+        #serialized_fc = parser.serialize_func(func, include_deps, exclude_deps)
         serialized_fc = parser.serialize(func)
         serialized_params = []
         for param in params:
@@ -259,7 +386,7 @@ class ServerlessRuntimeContext:
 
         # Payload JSON definition
         offload_fc = ExecSyncParams(
-            fc=serialized_fc, params=serialized_params, lang="PY"
+            fc=serialized_fc, params=serialized_params, lang="PY", fc_hash=func_hash
         )
 
         # TODO: The client should update the sr status before offloading a function
@@ -271,7 +398,7 @@ class ServerlessRuntimeContext:
         if resp.res is not None:
             resp.res = parser.deserialize(resp.res)
         else:
-            cognit_logger.error("Sync request error; {0}".format(resp.err))
+            cognit_logger.error("Sync request error, cause might be a timeout in HTTP request; {0}".format(resp.err))
 
         return resp
 
@@ -279,7 +406,8 @@ class ServerlessRuntimeContext:
         self,
         func: Callable,
         *params,
-    ) -> AsyncExecResponse:
+        **kwargs,
+    ) -> Optional[AsyncExecResponse]:
         """
         Perform the offload of a function to the cognit platform without \
         blocking.
@@ -290,6 +418,7 @@ class ServerlessRuntimeContext:
 
         Returns:
             AsyncExecResponse: Async Response Code
+            or None
         """
 
         # If the Serverless Runtime client is not initialized,
@@ -302,11 +431,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return AsyncExecResponse(
-                    status=AsyncExecStatus.READY,
-                    res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                    exec_id="0",
-                )
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
@@ -320,9 +445,11 @@ class ServerlessRuntimeContext:
         for param in params:
             serialized_params.append(parser.serialize(param))
 
+        func_hash = hashlib.sha256(func.__code__.co_code).hexdigest()
+
         # Payload JSON definition
         offload_fc = ExecSyncParams(
-            fc=serialized_fc, params=serialized_params, lang="PY"
+            fc=serialized_fc, params=serialized_params, lang="PY", fc_hash=func_hash
         )
 
         # TODO: The client should update the sr status before offloading a function
@@ -333,18 +460,19 @@ class ServerlessRuntimeContext:
         self,
         Id: AsyncExecId,
         timeout: float,
-    ) -> AsyncExecResponse:
+    ) -> Optional[AsyncExecResponse]:
         """
         Wait until an asynchronous (unblocking) task is finished and ready to be
         read.
 
         Args:
             Id (AsyncExecId): ID of the FaaS to which the function was sent.
-            timeout (int): Timeout in secs. after which it will stop querying if the FaaS
-            was finished or not.
+            timeout (int): Timeout in milisecs. after which it will stop
+            querying if the FaaS was finished or not.
 
         Returns:
             AsyncExecResponse: Will return async execution response data type.
+            or None
         """
         # If the Serverless Runtime client is not initialized,
         # create an instance with the endpoint
@@ -356,11 +484,7 @@ class ServerlessRuntimeContext:
                 cognit_logger.error(
                     "Serverless Runtime instance has not been requested yet"
                 )
-                return AsyncExecResponse(
-                    status=AsyncExecStatus.READY,
-                    res=ExecResponse(ret_code=ExecReturnCode.ERROR),
-                    exec_id="000-000-000",
-                )
+                return None
 
             self.src = ServerlessRuntimeClient(
                 self.sr_instance.SERVERLESS_RUNTIME.FAAS.ENDPOINT
@@ -368,16 +492,16 @@ class ServerlessRuntimeContext:
 
         parser = FaasParser()
 
-        # Define interval to 1 sec.
+        # Define interval to 1 milisec.
         iv = 1
         # Timeout management loop.
         while timeout - iv > 0:
             response = self.src.wait(Id.faas_task_uuid)
             if response != None and response.status == AsyncExecStatus.READY:
-                if response.res != None:
+                if response.res.res != None:
                     response.res.res = parser.deserialize(response.res.res)
                 return response
-            time.sleep(iv)
+            time.sleep(iv / 1000.0)
             timeout -= iv
         return response
 

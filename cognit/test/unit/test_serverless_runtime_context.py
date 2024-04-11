@@ -9,6 +9,8 @@ from cognit.serverless_runtime_context import *
 
 TEST_SR_ENDPOINT = "http://myserverlessruntime-1234"
 
+TEST_PEC_RESPONSE = "<Response [200]>"
+
 
 COGNIT_CONF_PATH = (
     os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +23,12 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     """
     _summary_: Fixture that returns a ServerlessRuntimeContext object already requested with id 42
     """
+    # Patch request get to return status_CODE 200 and a body with serverless runtime details
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = TEST_PEC_RESPONSE
+    mock_resp.status_code = 200
+    mocker.patch("requests.get", return_value=mock_resp)
+    
     f = FaaSConfig(STATE=FaaSState.PENDING)
     sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
     sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
@@ -34,6 +42,7 @@ def test_requested_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
+    sr_conf.lat_to_pe = 0.123
     my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -46,6 +55,12 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     """
     _summary_: Fixture that returns a ServerlessRuntimeContext object already requested with id 42
     """
+
+    # Patch request get to return status_CODE 200 and a body with serverless runtime details
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = TEST_PEC_RESPONSE
+    mock_resp.status_code = 200
+    mocker.patch("requests.get", return_value=mock_resp)
 
     # The first time we request the SR, must be pending
     f = FaaSConfig(STATE=FaaSState.PENDING, ENDPOINT=TEST_SR_ENDPOINT)
@@ -61,6 +76,7 @@ def test_ready_sr_ctx(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
+    sr_conf.lat_to_pe = 0.123
     my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -82,9 +98,17 @@ def test_ready_sr_ctx(mocker: MockerFixture):
 def test_sr_ctx_create(mocker: MockerFixture):
     # Validate serverless runtime context creation by mocking the provisioning engine client.
 
+    # Patch request get to return status_CODE 200 and a body with serverless runtime details
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = TEST_PEC_RESPONSE
+    mock_resp.status_code = 200
+    mocker.patch("requests.get", return_value=mock_resp)
+
     # Return a pending SR
     f = FaaSConfig(STATE=FaaSState.PENDING)
-    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
+    sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f, \
+        DEVICE_INFO=DeviceInfo(GEOGRAPHIC_LOCATION="Mock Geolocation"))
+
     sr = ServerlessRuntime(SERVERLESS_RUNTIME=sr_data)
 
     mocker.patch(
@@ -96,6 +120,7 @@ def test_sr_ctx_create(mocker: MockerFixture):
     sr_conf = ServerlessRuntimeConfig()
     sr_conf.name = "MyServerlessRuntime"
     sr_conf.scheduling_policies = [EnergySchedulingPolicy(50)]
+    sr_conf.lat_to_pe = 0.123
     my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
 
     ret = my_cognit_runtime.create(sr_conf)
@@ -103,10 +128,11 @@ def test_sr_ctx_create(mocker: MockerFixture):
 
 
 def test_sr_ctx_status(
-    mocker: MockerFixture, test_requested_sr_ctx: ServerlessRuntimeContext
+    mocker: MockerFixture, 
+    test_requested_sr_ctx: ServerlessRuntimeContext
 ):
     # First should reutrn pending status
-    f = FaaSConfig(STATE=FaaSState.PENDING)
+    f = FaaSConfig(STATE=FaaSState.PENDING)    
     pending_sr_data = ServerlessRuntimeData(ID=42, NAME="MyServerlessRuntime", FAAS=f)
     pending_sr = ServerlessRuntime(SERVERLESS_RUNTIME=pending_sr_data)
 
@@ -133,7 +159,13 @@ def test_sr_ctx_status(
     assert test_requested_sr_ctx.status == FaaSState.RUNNING
 
 
-def test_sr_ctx_status_no_init():
+def test_sr_ctx_status_no_init(mocker: MockerFixture):
+    # Patch request get to return status_CODE 200 and a body with serverless runtime details
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = TEST_PEC_RESPONSE
+    mock_resp.status_code = 200
+    mocker.patch("requests.get", return_value=mock_resp)
+    
     my_cognit_runtime = ServerlessRuntimeContext(config_path=COGNIT_CONF_PATH)
     assert my_cognit_runtime.status == None
 
