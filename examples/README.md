@@ -3,6 +3,10 @@ This folders contains useful turnkey examples that may show to the first time us
 
 ### Minimal example
 Running `python3 minimal_offload_sync.py` the user can run this minimal version that tests the very basic functionalities of the Device Runtime.
+
+### Update offloaded function requiremets example
+Running `python3 create_offl_update.py` the user can run this example that tests the update of the offloaded function requirements and how the COGNIT platform handles it.
+
 ## Run example with Docker
 
 To run easly the example, we provide a Dockerfile and a docker-compose file that build a Docker image with all the dependencies needed to run the example.
