@@ -85,10 +85,10 @@ class EnergySchedulingPolicy(SchedulingPolicy):
 
     def serialize_requirements(self) -> str:
         #return "[ENERGY=" + str(self.energy_percentage) + "]"
-        if self.energy_percentage>50:
+        if self.energy_percentage>0:
             return "ENERGY_RENEWABLE=yes"
         else:
-            return None
+            return "ENERGY_RENEWABLE=no"
 
 class ServerlessRuntimeConfig:
     """
@@ -134,6 +134,9 @@ class ServerlessRuntimeContext:
         ## Create FaasConfig scheduling policies from the user provided objects
         policies = ""
         requirements = ""
+
+        if (len(serveless_runtime_config.scheduling_policies) == 0):
+            requirements = "ENERGY_RENEWABLE=no"
 
         for policy in serveless_runtime_config.scheduling_policies:
             cognit_logger.warning(f"POLICY {policy.policy_name}: {policy.serialize_requirements()}")
