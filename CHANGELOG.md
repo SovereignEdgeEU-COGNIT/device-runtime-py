@@ -1,17 +1,20 @@
 # CHANGELOG
 
-## [release-cognit-1.0]
-- Release M15.
+## [release-cognit-2.0]
+- Release M21.
 
 ### Added
-- Update method.
-- Geolocation of the device.
-- Latency to PE.
-- Hash of the function being sent to COGNIT.
+- Add CognitFrontendClient to comply with v2 architecture.
+- Add EdgeClusterFrontendClient to comply with v2 architecture.
+- Add State Machine for better managing action flow.
+- Add enhanced authorization scheme supporting Biscuit token.
+
 ### Changed
-- Scheduling field schema.
-### Fixed
-- RUNNING state issue (needed time.sleep after RUNNING state was reported from PE)
+- Data models for CognitFrontendClient.
+- Data models for EdgeClusterFrontendClient.
+
+## [release-cognit-1.0]
+- Release M15.
 
 ## [1.0.0]
 - Initial release (M9)

@@ -1,0 +1,21 @@
+{
+    "api_endpoint": "http://localhost:1338",
+    "credentials": "oneadmin:opennebula",
+    "app_requirements": [
+        {
+            "REQUIREMENT": "cpu = amd",
+            "SCHEDULING_POLICY": "fast"
+        },
+        {
+            "REQUIREMENT": "cpu = intel",
+            "SCHEDULING_POLICY": "slow"
+        }
+    ],
+    "functions": {
+        "py": {
+            "LANG": "PY",
+            "FC": "ZGVmIHNheV9oZWxsbygpOgogICAgcHJpbnQoJ2hlbGxvJykK",
+            "FC_HASH": "bacaa2c80e4f7f381117ff8503bd8752"
+        }
+    }
+}
