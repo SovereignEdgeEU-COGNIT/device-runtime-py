@@ -1,0 +1,2 @@
+api_endpoint: "http://localhost:1338"
+credentials: "wronguser:wrongpsw"
