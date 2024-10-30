@@ -1,6 +1,0 @@
-endpoint: "127.0.0.1" # Fill in the IP of your Provisioning Engine
-port: 1337            # Fill in the port of your Provisioning Engine
-pe_usr: ""            # Fill in the Provisioning Engine Username.
-pe_pwd: ""            # Fill in the Provisioning Engine Password.
-sr_port: 8000
-

@@ -29,3 +29,4 @@ tomli==2.0.1
 typing_extensions==4.6.2
 urllib3==2.0.3
 uvicorn==0.22.0
+python-statemachine==2.3.6
