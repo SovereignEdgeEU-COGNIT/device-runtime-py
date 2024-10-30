@@ -5,6 +5,6 @@ services:
     container_name: device_client_runtime
     build:
       context: ./..
-      dockerfile: ./examples/Dockerfile
+      dockerfile: ./examples/minimal_offload_sync.dockerfile
     network_mode: host
  
