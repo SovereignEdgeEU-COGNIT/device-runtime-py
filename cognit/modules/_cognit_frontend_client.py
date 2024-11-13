@@ -143,7 +143,7 @@ class CognitFrontendClient:
                 cognit_logger.error("ECFE list is empty")
                 return None
             parsed_data = pydantic.parse_obj_as(EdgeClusterFrontendResponse, data[0])
-            return parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND'][:-1] ## TESTBED integration
+            return parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND'] ## TESTBED integration
             # return "http://0.0.0.0:1339" ## only for testing in local
         except Exception as e:
             cognit_logger.error(f"Error in get_ECFE response handling: {e}")

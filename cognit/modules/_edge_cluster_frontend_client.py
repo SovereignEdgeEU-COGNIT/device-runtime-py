@@ -63,7 +63,15 @@ class EdgeClusterFrontendClient:
         # Send request
         try:
             cognit_logger.debug(f"Sending function execution order...")
-            response = req.post(uri, headers=headers, params=qparams, data=json.dumps(serialized_params))
+            
+            # TODO: Add a timeout for the request, otherwise if ECFE is not available it takes too long
+            try:
+                response = req.post(uri, headers=headers, params=qparams, data=json.dumps(serialized_params))
+            except req.exceptions.SSLError as e:
+                if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+                    raise e
+                cognit_logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+                response = req.post(uri, headers=headers, params=qparams, data=json.dumps(serialized_params), verify=False) # verify=False because the uri uses a self-signed certificate
             response.raise_for_status() 
             response_data = response.json()
             # Parse the response to an ExecResponse model
