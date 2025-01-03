@@ -1,12 +1,13 @@
 from cognit.modules._minio_client import MinioClient  # Assuming the client is saved as minio_client.py
 from botocore.exceptions import ClientError
 import pytest
-import os
+
+# IMPORTANT #
+# Before executing these test, launch the minio container located in the local_minio directory
+# Using docker-compose up
 
 # Fixture to initialize the MinioClient
 def get_minio_client():
-    # Launch minio
-    os.system("./local_minio/launch_minio.sh")
     endpoint = "http://localhost:9000"
     access_key = "user123"
     secret_key = "CHANGEME123"
