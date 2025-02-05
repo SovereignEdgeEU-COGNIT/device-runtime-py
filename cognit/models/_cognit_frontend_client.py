@@ -3,8 +3,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     FLAVOUR: str = Field(
         default="Nature",
@@ -21,8 +19,7 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     GEOLOCATION: Optional[str] = Field( # if MAX_LATENCY is defined, GEOLOCATION becomes compulsory 
         default=None,
         description="Scheduling policy that applies to the requirement") 
-
-
+    
 class FunctionLanguage(str, Enum):
     PY = "PY"
     C = "C"

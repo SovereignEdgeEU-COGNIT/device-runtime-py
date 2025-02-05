@@ -9,12 +9,7 @@ class FunctionLanguage(str, Enum):
 class ExecutionMode(str, Enum):
     SYNC = "sync"
     ASYNC = "async"
-class ExecSyncParams(BaseModel):
-    lang: str
-    fc: str
-    fc_hash: str
-    params: list[str]
-class ExecAsyncParams(BaseModel):
+class ExecParams(BaseModel):
     lang: str
     fc: str
     fc_hash: str
@@ -54,3 +49,4 @@ class Execution(BaseModel):
         description="The language of the offloaded function 'PY' or 'C'")
     params: List[str] = Field(
         description="A list containing the function parameters encoded in base64")
+    
