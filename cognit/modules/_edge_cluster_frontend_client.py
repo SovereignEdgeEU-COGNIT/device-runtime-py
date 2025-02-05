@@ -1,12 +1,9 @@
-import requests as req
-import pydantic
-import json
-
 from cognit.models._edge_cluster_frontend_client import ExecResponse, ExecutionMode
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
-
-cognit_logger = CognitLogger()
+import requests as req
+import pydantic
+import json
 
 class EdgeClusterFrontendClient:
 
@@ -19,8 +16,11 @@ class EdgeClusterFrontendClient:
             and the Edge Cluster Frontend
             address (str): address of the Edge Cluster Frontend
         """
-        self.parser = FaasParser()
+
+        self.cognit_logger = CognitLogger()
         self.set_has_connection(True)
+        self.parser = FaasParser()
+
         # Check if the parameters received are not null
         if token == None:
             cognit_logger.error("Token is Null")
@@ -28,11 +28,11 @@ class EdgeClusterFrontendClient:
         if address == None:
             cognit_logger.error("Address is not given")
             self.set_has_connection(False)
+
         self.token = token
-        # cognit_logger.warning(f"\n\n[ECFC] ---- {self.token}\n\n")
         self.address = address
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, params_tuple: tuple) -> ExecResponse:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
@@ -44,78 +44,116 @@ class EdgeClusterFrontendClient:
         """
 
         # Create request
-        cognit_logger.debug(f"Execute function with ID {func_id}")
+        self.cognit_logger.debug(f"Execute function with ID {func_id}")
         uri = f"{self.address}/v1/functions/{func_id}/execute"
+
         # Header
-        headers = {
-            "token": self.token
-        }
+        header = self.get_header(self.token)
         # Query parameters
-        qparams = {
-            "app_req_id": app_req_id,
-            "mode": exec_mode.value
-        }
-        # Encode parameters
-        serialized_params = []
-        for param in params_tuple:
-            serialized_param = self.parser.serialize(param)
-            serialized_params.append(serialized_param)
+        qparams = self.get_qparams(app_req_id, exec_mode)
+        # Encoded parameters
+        serialized_params = self.get_serialized_params(params_tuple)
+
         # Send request
         try:
-            cognit_logger.debug(f"Sending function execution order...")
-            
-            # TODO: Add a timeout for the request, otherwise if ECFE is not available it takes too long
             try:
-                response = req.post(uri, headers=headers, params=qparams, data=json.dumps(serialized_params))
+                response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), timeout=timeout)
             except req.exceptions.SSLError as e:
                 if "CERTIFICATE_VERIFY_FAILED" not in str(e):
                     raise e
-                cognit_logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
-                response = req.post(uri, headers=headers, params=qparams, data=json.dumps(serialized_params), verify=False) # verify=False because the uri uses a self-signed certificate
+                self.cognit_logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+                 # Send request with verify=False because the uri uses a self-signed certificate
+                response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
+            
+            # Check if the response is successful
             response.raise_for_status() 
             response_data = response.json()
-            # Parse the response to an ExecResponse model
-            response_obj = pydantic.parse_obj_as(ExecResponse, response_data)
-            cognit_logger.debug(f"Result obtained {func_id}")
-            # Evaluate response
-            self.evaluate_response(response_obj)
-        except req.exceptions.RequestException as e:
-            cognit_logger.error(f"Error during execution: {e}")
-            raise
-        return response_obj
 
-    def send_metrics(self):
+            # Parse the response to an ExecResponse model
+            result = pydantic.parse_obj_as(ExecResponse, response_data)
+            
+            # Deserialize the response
+            result.res = self.parser.deserialize(result.res)
+
+            # Evaluate response
+            self.evaluate_response(result)
+
+        except req.exceptions.RequestException as e:
+            self.cognit_logger.error(f"Error during execution: {e}")
+            raise
+
+        # Execute the callback function
+        callback(result)
+
+    def send_metrics(self, location: str, latency: int) -> ExecResponse:
         """
         Collects current device location and latency and sends it to the Edge Cluster Frontend 
+
+        Args:
+            location (str): Current location of the device
+            latency (int): Current latency of the device
         """   
 
         # Create request
-        cognit_logger.debug("Retriving metrics...")
+        self.cognit_logger.debug("Retriving metrics...")
         uri = self.address + "/v1/device_metrics" 
-        headers = {"token": self.token}
-        # TODO: Add current location and latency to the request
+
+        # Header
+        header = self.get_header(self.token)
 
         # Wait for the response
-        response = req.post(uri, headers=headers)
+        response = req.post(uri, headers=header, data={"location": location, "latency": latency})
+
         # Evaluate response
         self.evaluate_response(response)
         return response
 
-    def evaluate_response(self, response: ExecResponse): 
+    def get_header(self, token: str):
+        """
+        Generates the header for the request
 
-        # Client has connection depending on the answer given by the ECF
-        if response.ret_code == 200:
-            cognit_logger.debug("Function execution success")
-            self.set_has_connection(True)
-        if response.ret_code == 401:
-            cognit_logger.debug("Token not valid, client is unauthorized")
-            self.set_has_connection(False)
-        if response.ret_code == 400:
-            cognit_logger.debug("Bad request. Has the token been added in the header?")
-            self.set_has_connection(False)
+        Args:
+            token (str): Token for the communication between the client 
+            and the Edge Cluster Frontend
+        """
+        return {
+            "token": token
+        }
+    
+    def get_qparams(self, app_req_id: int, exec_mode: ExecutionMode):
+        """
+        Generates the query parameters for the request
 
-    def get_has_connection(self):
-        return self.has_connection
+        Args:
+            app_req_id (int): Identifier of the requirements associated to the function
+            exec_mode (ExecutionMode): Selected mode for offloading (SYNC OR ASYNC)
+        """
+        return {
+            "app_req_id": app_req_id,
+            "mode": exec_mode.value
+        }
+    
+    def get_serialized_params(self, params_tuple: tuple):
+        """
+        Serializes the parameters to be sent in the request
+
+        Args:
+            params_tuple (tuple): Arguments needed to call the function
+        """
+        serialized_params = []
+        for param in params_tuple:
+            serialized_param = self.parser.serialize(param)
+            serialized_params.append(serialized_param)
+        return serialized_params
+
+    def get_has_connection(self) -> bool:
+        """
+        Getter for the connection status
+        """
+        return self._has_connection
     
     def set_has_connection(self, is_connected):
-        self.has_connection = is_connected
+        """
+        Setter for the connection status
+        """
+        self._has_connection = is_connected
