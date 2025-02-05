@@ -1,21 +1,14 @@
-import json
-import pydantic
-import requests as req
-from requests.auth import HTTPBasicAuth
-from typing import Callable, Optional, Union, List
-import hashlib
-
 from cognit.models._cognit_frontend_client import Scheduling, UploadFunctionDaaS, FunctionLanguage, EdgeClusterFrontendResponse
 from cognit.modules._cognitconfig import CognitConfig
-from cognit.modules._logger import CognitLogger
 from cognit.modules._faas_parser import FaasParser
-from cognit.models._edge_cluster_frontend_client import Execution
+from cognit.modules._logger import CognitLogger
+from requests.auth import HTTPBasicAuth
+from typing import Callable, List
+import requests as req
+import pydantic
+import hashlib
+import json
 
-cognit_logger = CognitLogger()
-
-SR_RESOURCE_ENDPOINT = "serverless-runtimes"
-
-REQ_TIMEOUT = 60
 
 def filter_empty_values(data):
     if isinstance(data, dict):
@@ -24,16 +17,13 @@ def filter_empty_values(data):
     else:
         return data
     
-
-
+"""
+Class to interact with the Cognit Frontend Engine.
+It is used to upload the requirements of the application, get the address of the Edge Cluster Frontend Engine
+"""
 class CognitFrontendClient:
-    # ec_fe_list = List[EdgeClusterFrontend] 
-    ec_fe_list = List[str]
-    
-    def __init__(
-        self,
-        config: CognitConfig  
-    ):
+
+    def __init__(self, config: CognitConfig):
         """
         Initializes app_req_id to None (it is updated when the user calls init())
         Initializes token to None (it is updated when the user calls init())
@@ -41,34 +31,18 @@ class CognitFrontendClient:
         Args:
             config: CognitConfig object containing a valid Cognit user and psd
         """
-        self.config = config
-        self.endpoint = self.config.cognit_frontend_engine_endpoint
-        # else:
-        #     self.endpoint = "http://{0}:{1}".format(
-        #         self.config.cognit_frontend_engine_endpoint, self.config.cognit_frontend_engine_port
-        #     )
-        self.latency_endp = self.config.cognit_frontend_engine_endpoint
-        self.latency_to_cfe = 0.0
-        
-        self.token = None
-        self.app_req_id = None
-        self.offloaded_funs_hash_map = {} # {ḱey: hash(funcN)], value: cognit_fc_id_INTEGER}
-        self.ec_fe_list = [] # TODO: List containing the endpoints of the Edge Cluster Frontend Engines
-        self._has_connection = False
 
-    def get_has_connection(self):
-        '''
-        Right now it does not implement any logic, but by using @property,
-        additional logic can be implemented in the getter method
-        '''
-        return self._has_connection
-    
-    def set_has_connection(self, new_value: bool):
-        self._has_connection = new_value
+        self.endpoint = self.config.cognit_frontend_engine_endpoint
+        self.logger = CognitLogger()
+        self._has_connection = False
+        self.parser = FaasParser()
+        self.app_req_id = None
+        self.config = config
+        self.token = None
         
-    
-    def set_token(self, token):
-        self.token = token
+        # Storage
+        self.offloaded_funs_hash_map = {}  # This is a dictionary that will store the hash of the function and the cognit_fc_id
+        self.ec_fe_list = [] # TODO: List containing the endpoints of the Edge Cluster Frontend Engines
     
     def init(self, initial_reqs: Scheduling) -> bool:
         """
@@ -80,31 +54,31 @@ class CognitFrontendClient:
             True if response.status_code is the expected (200)
             False otherwise
         """
+
         if not isinstance(initial_reqs, Scheduling):
             cognit_logger.error("Reqs must be of type Scheduling")
             return False
         
-        # self.token = self._authenticate() ## commented due to token duplication
-        # cognit_logger.warning(f"\n\n[CFCl] ---- {self.token}\n\n")
-
         if self.token is None:
             self.set_has_connection(False)
             return False
         
         if not self._check_geolocation_valid(initial_reqs):
-            cognit_logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
+            self.cognit_logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
             return False
         
         uri = f'{self.endpoint}/v1/app_requirements'
-        headers = {"token": self.token}
-        response = req.post(uri, headers=headers, data=initial_reqs.json(exclude_unset=True))
+        header = self.get_header(self.token)
+
+        response = req.post(uri, headers=header, data=initial_reqs.json(exclude_unset=True))
+
         try:
             self.app_req_id = response.json()
         except:
             return False
         
         if not self.app_req_id:
-            cognit_logger.error("Application ID was not assigned. Check for errors")
+            self.cognit_logger.error("Application ID was not assigned. Check for errors")
             return False
         
         if response.status_code != 200:
@@ -130,23 +104,23 @@ class CognitFrontendClient:
         response = req.get(uri, headers=headers)
         self.set_has_connection(response.status_code < 400)
         if response.status_code >= 300:
-            cognit_logger.warning(f"App req update returned {response.status_code}")
+            self.cognit_logger.warning(f"App req update returned {response.status_code}")
             self._inspect_response(response, "_app_req_update.warning")
             return None
         
         try:
             data = response.json()
             if not isinstance(data, list):
-                cognit_logger.error(f"ECFE list is not a list, it is of class: {data.__class__}")
+                self.cognit_logger.error(f"ECFE list is not a list, it is of class: {data.__class__}")
                 return None
             if len(data) <= 0:
-                cognit_logger.error("ECFE list is empty")
+                self.cognit_logger.error("ECFE list is empty")
                 return None
             parsed_data = pydantic.parse_obj_as(EdgeClusterFrontendResponse, data[0])
             return parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND'] ## TESTBED integration
             # return "http://0.0.0.0:1339" ## only for testing in local
         except Exception as e:
-            cognit_logger.error(f"Error in get_ECFE response handling: {e}")
+            self.cognit_logger.error(f"Error in get_ECFE response handling: {e}")
             return None
     
     def _authenticate(self) -> str:
@@ -159,12 +133,12 @@ class CognitFrontendClient:
         Returns:
             Token: JSON dict containing the JWT Token
         """
-        cognit_logger.debug(f"Requesting token for {self.config._cognit_frontend_engine_usr}")
+        self.cognit_logger.debug(f"Requesting token for {self.config._cognit_frontend_engine_usr}")
 
         uri = f'{self.endpoint}/v1/authenticate'
         response = req.post(url=uri, auth=HTTPBasicAuth(self.config._cognit_frontend_engine_usr, self.config.cognit_frontend_engine_cfe_pwd))
         if response.status_code not in [200, 201]:
-            cognit_logger.critical(f"Token creation failed with status code: {response.status_code}")
+            self.cognit_logger.critical(f"Token creation failed with status code: {response.status_code}")
             self._inspect_response(response, "_authenticate.error")
             return None
         self.token = response.json()
@@ -188,14 +162,14 @@ class CognitFrontendClient:
             return False
         
         if not self._check_geolocation_valid(new_reqs):
-            cognit_logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
+            self.cognit_logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
             return False
         
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
         headers = {"token": self.token}
         response = req.put(uri, headers=headers, data=new_reqs.json(exclude_unset=True))
         if response.status_code >= 300:
-            cognit_logger.warning(f"App req update returned {response.status_code}")
+            self.cognit_logger.warning(f"App req update returned {response.status_code}")
             self._inspect_response(response, "_app_req_update.warning")
         
         self.set_has_connection(response.status_code < 400)
@@ -219,7 +193,7 @@ class CognitFrontendClient:
         # if response.status_code >= 300:
         #     return None
         if response.status_code != 200: # something went wrong
-            cognit_logger.error(f"Read response code was not expected one with status_code: {response.status_code}")
+            self.cognit_logger.error(f"Read response code was not expected one with status_code: {response.status_code}")
             self._inspect_response(response, "_app_req_read.error")
             return None
         
@@ -227,7 +201,7 @@ class CognitFrontendClient:
         try:
             response = pydantic.parse_obj_as(Scheduling, response.json())
         except pydantic.ValidationError as e:
-            cognit_logger.error(e)
+            self.cognit_logger.error(e)
         
         return response
     
@@ -240,74 +214,103 @@ class CognitFrontendClient:
             True if response.status_code is the expected (204)
             False otherwise
         """
-        cognit_logger.debug(f"Deleting application requirements {self.app_req_id}")
+        self.cognit_logger.debug(f"Deleting application requirements {self.app_req_id}")
 
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
         headers = {"token": self.token}
 
         response = req.delete(uri, headers=headers)
         if response.status_code >= 300:
-            cognit_logger.warning(f"App req delete returned {response.status_code} with body: {response.json()}")
+            self.cognit_logger.warning(f"App req delete returned {response.status_code} with body: {response.json()}")
         
         self.set_has_connection(response.status_code < 400)
         return response.status_code == 204
     
     
-    def _serialize_and_upload_fc_to_daas_gw(self, func: Callable):
-        # TODO:
-        parser = FaasParser()
-        serialized_fc = parser.serialize(func)
-        func_hash = hashlib.sha256(func.__code__.co_code).hexdigest()
-        if self.is_function_uploaded(func_hash): # TODO
-            cognit_logger.debug("Function already in local HASH map")
-            return self.app_req_id, self.offloaded_funs_hash_map[func_hash]
-        fc = UploadFunctionDaaS(
+    def upload_function_to_daas(self, function: Callable) -> int:
+        """
+        Serializes the function and uploads it to the Daas Gateway
+
+        Args:
+            func: Function to be serialized and uploaded
+        """
+
+        # Serialize function
+        serialized_fc = self.parser.serialize(function)
+
+        # Get hash of the function
+        function_hash = hashlib.sha256(function.__code__.co_code).hexdigest()
+
+        # Check if the function is already uploaded
+        if self.is_function_uploaded(function_hash):
+            self.cognit_logger.debug("Function already in local HASH map")
+            return self.app_req_id, self.offloaded_funs_hash_map[function_hash]
+        
+        # Create UploadFunctionDaaS object
+        function_data = UploadFunctionDaaS (
             LANG=FunctionLanguage.PY,
             FC=serialized_fc,
-            FC_HASH=func_hash
+            FC_HASH=function_hash
         )
 
-        cognit_fc_id = self._upload_fc(fc)
-        if cognit_fc_id:
-            self.offloaded_funs_hash_map[func_hash] = cognit_fc_id
-            return self.app_req_id, cognit_fc_id
-        return None, None
+        # Send function to Daas
+        cognit_fc_id = self.send_funtion_to_daas(function_data)
+
+        # Check if the function was uploaded
+        if cognit_fc_id == None:
+            # Add function to local HASH map
+            self.offloaded_funs_hash_map[function_hash] = cognit_fc_id
+            return cognit_fc_id
+        else:
+            self.logger.error("Function was not uploaded")
+            return None
     
-    def is_function_uploaded(self, func_hash: str) -> bool:
-        return func_hash in self.offloaded_funs_hash_map.keys()
-    
-    
-    def _upload_fc(self, fc: UploadFunctionDaaS) -> int:
+    def send_funtion_to_daas(self, data: UploadFunctionDaaS) -> int:
         """
         Uploads the function to the Daas Gateway
-        TODO: Save the returned func_id. One CognitFrontendClient can have 0-N func_ids
+        
+        Args:
+            data: UploadFunctionDaaS object containing the function data
         """
-        cognit_logger.debug(f"Uploading function {fc}")
+        self.cognit_logger.debug(f"Uploading function: {data}")
 
         uri = f'{self.endpoint}/v1/daas/upload'
-        headers = {"token": self.token}
+        header = self.get_header(self.token)
 
-        response = req.post(uri, headers=headers, data=fc.json())
+        # Send data to DaaS
+        response = req.post(uri, headers=header, data=data.json())
+
         if response.status_code != 200:
             self._inspect_response(response)
-            return False
+            return None
         
-        func_id = response.json()
-        return func_id
+        # Get function ID
+        function_id = response.json()
+        return function_id
     
     def _inspect_response(self, response: req.Response, requestFun: str = ""):
         """
         Prints response of a request. For debugging purpouses only 
+
+        Args:
+            response: Response object of the request
+            requestFun: String containing the name of the request
         """
-        cognit_logger.error(f"[{requestFun}] Response Code: {response.status_code}")
+        self.cognit_logger.error(f"[{requestFun}] Response Code: {response.status_code}")
         if response.status_code != 204:
             try:
-                cognit_logger.error(f"[{requestFun}] Response Body: {response.json()}")
+                self.cognit_logger.error(f"[{requestFun}] Response Body: {response.json()}")
             except json.JSONDecodeError:
-                cognit_logger.error(f"[{requestFun}] Response Text: {response.text}")
+                self.cognit_logger.error(f"[{requestFun}] Response Text: {response.text}")
     
     
     def _check_geolocation_valid(self, reqs: Scheduling) -> bool:
+        """
+        Checks if the geolocation is valid for the given requirements
+
+        Args:
+            reqs: Scheduling object containing the requirements of the app
+        """
         try:
             if reqs.MAX_LATENCY in [None, 0]:  # If MAX_LATENCY is not defined, no need to check GEOLOCATION
                 return True
@@ -316,6 +319,47 @@ class CognitFrontendClient:
             return isinstance(reqs.GEOLOCATION, str) and reqs.GEOLOCATION != ""
             
         except Exception as e:
-            cognit_logger.error(f"Error validating data: {e}")
+            self.cognit_logger.error(f"Error validating data: {e}")
             return False
+        
+    def is_function_uploaded(self, func_hash: str) -> bool:
+        """
+        Checks if the function is already uploaded
+
+        Args:
+            func_hash: Hash of the function
+        """
+        return func_hash in self.offloaded_funs_hash_map.keys()
+    
+    def get_header(self, token: str) -> dict:
+        """
+        Returns the header for the requests
+        """
+        return {
+            "token": token
+        }
+
+    def get_has_connection(self) -> bool:
+        """
+        Returns the connection status of the client
+        """
+        return self._has_connection
+    
+    def set_has_connection(self, new_value: bool):
+        """
+        Sets the connection status of the client
+        """
+        self._has_connection = new_value
+    
+    def set_token(self, token) -> str:
+        """
+        Sets the token of the client
+        """
+        self.token = token
+
+    def get_app_requirements_id(self) -> int:
+        """
+        Get the app requirements id of the function
+        """
+        return self.app_req_id
         
