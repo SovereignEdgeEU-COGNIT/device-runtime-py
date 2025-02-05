@@ -2,6 +2,10 @@ from pydantic import BaseModel, Field
 from typing import List
 from enum import Enum
 
+class ExecReturnCode(Enum):
+    SUCCESS = 0
+    ERROR = -1
+
 class FunctionLanguage(str, Enum):
     PY = "PY"
     C = "C"
@@ -21,3 +25,17 @@ class Call(BaseModel):
         description="The mode of execution of the offloaded function (SYNC or ASYNC)")
     params: List[str] = Field(
         description="A list containing the function parameters encoded in base64")
+    
+class ExecResponse(BaseModel):
+    ret_code: ExecReturnCode = Field(
+        default=ExecReturnCode.SUCCESS,
+        description="Offloaded function execution result (0 if finished successfully, 1 if not)",
+    )
+    res: str | None = Field(
+        default=None,
+        description="Result of the offloaded function",
+    )
+    err: str | None = Field(
+        default=None,
+        description="Offloaded function execution error description",
+    )
