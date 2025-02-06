@@ -21,9 +21,9 @@ class StateMachineHandler():
         while True:
 
             self.logger.info("Current state: " + self.sm.current_state.id)
-            # Evaluar las condiciones de transición para cambiar de estado
+            # Evaluate the conditions of the current state
             self.evaluate_conditions()
-            # Esperar un segundo antes de evaluar nuevamente
+            # Wait for the next iteration
             time.sleep(interval)
 
     def evaluate_conditions(self):

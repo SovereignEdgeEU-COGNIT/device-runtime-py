@@ -1,7 +1,6 @@
 from cognit.models._device_runtime import ExecResponse
 from cognit.modules._logger import CognitLogger
 from threading import Lock, Condition
-import time
 
 class Singleton(type):
     _instances = {}
