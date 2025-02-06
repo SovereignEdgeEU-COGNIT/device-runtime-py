@@ -1,5 +1,5 @@
+from typing import Callable, List, Any
 from pydantic import BaseModel, Field
-from typing import List
 from enum import Enum
 
 class ExecReturnCode(Enum):
@@ -15,15 +15,15 @@ class ExecutionMode(str, Enum):
     ASYNC = "async"
 
 class Call(BaseModel):
-    function: callable = Field(
+    function: Callable = Field(
         description="The function to be offloaded")
     fc_lang: FunctionLanguage = Field(
         description="The language of the offloaded function 'PY' or 'C'")
-    callback: callable = Field(
+    callback: Callable | None = Field(
         description="The callback function to be executed after the offloaded function finishes")
     mode: ExecutionMode = Field(
         description="The mode of execution of the offloaded function (SYNC or ASYNC)")
-    params: List[str] = Field(
+    params: List[Any] = Field(
         description="A list containing the function parameters encoded in base64")
     
 class ExecResponse(BaseModel):

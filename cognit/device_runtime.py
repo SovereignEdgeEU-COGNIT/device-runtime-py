@@ -1,4 +1,5 @@
-from cognit.models._edge_cluster_frontend_client import Call, FunctionLanguage
+from cognit.models._device_runtime import Call, FunctionLanguage, ExecResponse, ExecutionMode
+from cognit.modules._sync_result_queue import SyncResultQueue
 from cognit.models._cognit_frontend_client import Scheduling
 from cognit.modules._sm_handler import StateMachineHandler
 from cognit.modules._cognitconfig import CognitConfig
@@ -22,6 +23,7 @@ class DeviceRuntime:
             the Cognit Frontend
         """
         self.cognit_config = CognitConfig(config_path)
+        self.sync_result_queue = SyncResultQueue()
         self.cognit_logger = CognitLogger()
         self.call_queue = CallQueue()
         self.current_reqs = None
@@ -51,7 +53,7 @@ class DeviceRuntime:
 
         # State machine initialization
         if self.sm_handler == None:
-            self.sm_handler = StateMachineHandler(self.cognit_config, init_reqs, self.call_queue)
+            self.sm_handler = StateMachineHandler(self.cognit_config, init_reqs, self.call_queue, self.sync_result_queue)
 
         # Launch SM thread
         try:
@@ -92,7 +94,7 @@ class DeviceRuntime:
         self.current_reqs = new_reqs
         try:
             self.sm_thread.join()
-            self.sm_handler = StateMachineHandler(self.cognit_config, new_reqs, self.call_queue)
+            self.sm_handler = StateMachineHandler(self.cognit_config, new_reqs, self.call_queue, self.sync_result_queue)
             self.sm_thread = Thread(target=self.sm_handler.run)
             self.sm_thread.start()
         except Exception as e:
@@ -109,12 +111,34 @@ class DeviceRuntime:
         """
 
         # Create a Call object
-        call = Call(function=function, fc_lang=FunctionLanguage.PY, callback=callback, is_async=True, params=params)
+        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.ASYNC, callback=callback, params=params)
 
         # Add the call to the queue
-        if self.call_queue.add_function(call):
+        if self.call_queue.add_call(call):
             self.cognit_logger.debug("Function added to the queue")
             return True
         else:
             self.cognit_logger.error("Function could not be added to the queue")
             return False
+        
+    def call_sync(self, function: Callable, *params: tuple) -> ExecResponse:
+        """
+        Offloads a function synchronously
+
+        Args:
+            function (Callable): The target funtion to be offloaded
+            params (List[Any]): Arguments needed to call the function
+        """
+
+        # Create a Call object
+        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.SYNC, callback=None, params=params)
+
+        # Add the call to the queue
+        if self.call_queue.add_call(call):
+            self.cognit_logger.debug("Function added to the queue")
+        else:
+            self.cognit_logger.error("Function could not be added to the queue")
+            return None
+        
+        # Wait for the result
+        return self.sync_result_queue.get_sync_result()
