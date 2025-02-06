@@ -1,12 +1,13 @@
-
 from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._cognit_frontend_client import CognitFrontendClient, Scheduling
+from cognit.modules._latency_calculator import LatencyCalculator
 from cognit.modules._sync_result_queue import SyncResultQueue
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._call_queue import CallQueue
 from cognit.modules._logger import CognitLogger
 from cognit.models._device_runtime import Call
 from statemachine import StateMachine, State
+import threading
 
 import sys
 
@@ -85,10 +86,18 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Get queues
         self.call_queue = call_queue
         self.sync_results_queue = sync_result_queue
+
+        # Latency thread
+        self.latency_calculator = None
+        self.lc_thread = None
         super().__init__()
 
     # Get credentials by instantiating a CognitFrontendClient and authenticates to the Cognit Frontend  
     def on_enter_init(self):
+
+        if self.lc_thread is not None:
+            self.lc_thread.join()
+            self.lc_thread = None
 
         # Instantiate Cognit Frontend Client
         self.cfc = CognitFrontendClient(self.config)
@@ -98,6 +107,10 @@ class DeviceRuntimeStateMachine(StateMachine):
 
     # Upload processing requirements 
     def on_enter_send_init_request(self):
+
+        if self.lc_thread is not None:
+            self.lc_thread.join()
+            self.lc_thread = None
 
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")
@@ -118,11 +131,20 @@ class DeviceRuntimeStateMachine(StateMachine):
     # Get the edge cluster address 
     def on_enter_get_ecf_address(self):
 
+        if self.lc_thread is not None:
+            self.lc_thread.join()
+            self.lc_thread = None
+
         # Get Edge Cluster Frontend 
         self.ecc_address = self.cfc._get_edge_cluster_address()
 
         # Initialize Edge Cluster client
         self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address)
+
+        # Launch latency calculator
+        self.latency_calculator = LatencyCalculator(self.ecf, self.requirements.GEOLOCATION)
+        self.lc_thread = threading.Thread(target=self.latency_calculator.run)
+        self.lc_thread.start()
 
         # Reset attemps counter
         self.get_address_counter += 1

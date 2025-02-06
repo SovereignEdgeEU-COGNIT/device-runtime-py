@@ -1,0 +1,63 @@
+
+from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
+from cognit.modules._logger import CognitLogger
+from subprocess import Popen, PIPE, STDOUT
+import threading
+import shlex  
+import time
+
+import sys
+
+sys.path.append(".")
+
+class LatencyCalculator:
+
+    def __init__(self, ecf: EdgeClusterFrontendClient, location: str, interval: int = 30):
+
+        self.logger = CognitLogger()
+        self.location = location
+        self.interval = interval
+        self.host = ecf.address.split("//")[1]
+        self.ecf = ecf
+
+    def get_simple_cmd_output(self, cmd, stderr=STDOUT) -> str:
+        """
+        Execute a simple external command and get its output.
+        """
+        args = shlex.split(cmd)
+        return Popen(args, stdout=PIPE, stderr=stderr).communicate()[0].decode()
+
+    def calculate(self) -> float:
+        """
+        Calculate the latency of the host.
+        """
+        cmd = f"ping -c 1 {self.host}"
+        output = self.get_simple_cmd_output(cmd)
+        latency_line = output.strip().split("\n")[1]
+        
+        # Extracting time=XXXms from the last line
+        try:
+            latency = float(latency_line.split("time=")[-1].split()[0])
+        except (IndexError, ValueError):
+            self.logger.error("Failed to parse latency from:", latency_line)
+            return -1.0  # Return -1.0 if parsing fails
+
+        return latency
+    
+    def run(self):
+        """
+        Run the latency calculator.
+
+        :param interval: The interval in seconds to calculate the latency.
+        """
+        while True:
+            latency = self.calculate()
+            self.logger.debug(f"Latency: {latency} ms")
+            # self.ecf.send_metrics(self.location, latency)
+            time.sleep(self.interval)
+
+    def set_interval(self, interval: int):
+        """
+        Set the interval in seconds to calculate the latency.
+        """
+        self.interval = interval
