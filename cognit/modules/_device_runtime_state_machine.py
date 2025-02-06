@@ -1,11 +1,13 @@
 
 from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._cognit_frontend_client import CognitFrontendClient, Scheduling
-from cognit.models._edge_cluster_frontend_client import Call
+from cognit.modules._sync_result_queue import SyncResultQueue
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._call_queue import CallQueue
 from cognit.modules._logger import CognitLogger
+from cognit.models._device_runtime import Call
 from statemachine import StateMachine, State
+
 import sys
 
 sys.path.append(".")
@@ -59,14 +61,14 @@ class DeviceRuntimeStateMachine(StateMachine):
     token_not_valid_ready_2 = ready.to(init, unless=["is_ecf_connected"])
   
 
-    def __init__(self, config: CognitConfig, requirements: Scheduling, call_queue: CallQueue):
+    def __init__(self, config: CognitConfig, requirements: Scheduling, call_queue: CallQueue, sync_result_queue: SyncResultQueue):
         # Clients
         self.cfc = None
         self.ecf = None
 
         # Communication parameters
         self.token = None
-        self.requirements = requirements
+        self.requirements = Scheduling(**requirements)
         self.config = config
 
         # Counters
@@ -80,24 +82,22 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.requirements_uploaded = False
         self.requirements_changed = False
 
-        # Get call queue
+        # Get queues
         self.call_queue = call_queue
+        self.sync_results_queue = sync_result_queue
         super().__init__()
 
     # Get credentials by instantiating a CognitFrontendClient and authenticates to the Cognit Frontend  
     def on_enter_init(self):
-        self.logger.debug("Entering INIT state")
 
         # Instantiate Cognit Frontend Client
         self.cfc = CognitFrontendClient(self.config)
-
         # This function will return if the client successfull authenticates or not
         self.token = self.cfc._authenticate()
         self.logger.debug("Token: " + str(self.token))
 
     # Upload processing requirements 
     def on_enter_send_init_request(self):
-        self.logger.debug("Entering INIT_REQUEST state")
 
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")
@@ -111,14 +111,12 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.up_req_counter += 1
 
     def on_exit_send_init_request(self):
-        self.logger.debug("Exiting SEND_INIT_REQUEST state")
 
         # Reset counter
         self.up_req_counter = 0
 
     # Get the edge cluster address 
     def on_enter_get_ecf_address(self):
-        self.logger.debug("Entering GET_ECF_ADDRESS state")
 
         # Get Edge Cluster Frontend 
         self.ecc_address = self.cfc._get_edge_cluster_address()
@@ -130,17 +128,15 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.get_address_counter += 1
 
     def on_exit_get_ecf_address(self):
-        self.logger.debug("Exiting GET_ECF_ADDRESS state")
 
         # Reset counter
         self.get_address_counter = 0
 
     # State that waits for user functions offloading
     def on_enter_ready(self):
-        self.logger.debug("Entering READY state")
 
         # Get Call
-        call = self.call_queue.get_function()  # type: Call
+        call = self.call_queue.get_call()  # type: Call
 
         # If there is a call, offload it
         if call is not None:
@@ -154,9 +150,15 @@ class DeviceRuntimeStateMachine(StateMachine):
             # Execute function
             if function_id is None:
                 self.logger.error("Function could not be uploaded")
+                
             else:
-                # Execute function
-                self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params) # For now we are only supporting synchronous executions
+                if call.mode == "sync":
+                    # Execute function
+                    result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params) 
+                    # Add result to the queue
+                    self.sync_results_queue.add_sync_result(result)
+                else:
+                    self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params)
                 
     # Checks if CF client has connection with the CF
     def is_cfc_connected(self):

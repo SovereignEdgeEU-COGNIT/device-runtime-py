@@ -16,23 +16,22 @@ class EdgeClusterFrontendClient:
             and the Edge Cluster Frontend
             address (str): address of the Edge Cluster Frontend
         """
-
-        self.cognit_logger = CognitLogger()
+        self.logger = CognitLogger()
         self.set_has_connection(True)
         self.parser = FaasParser()
 
         # Check if the parameters received are not null
         if token == None:
-            cognit_logger.error("Token is Null")
+            logger.error("Token is Null")
             self.set_has_connection(False)
         if address == None:
-            cognit_logger.error("Address is not given")
+            logger.error("Address is not given")
             self.set_has_connection(False)
 
         self.token = token
         self.address = address
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None | ExecResponse:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
@@ -44,13 +43,13 @@ class EdgeClusterFrontendClient:
         """
 
         # Create request
-        self.cognit_logger.debug(f"Execute function with ID {func_id}")
+        self.logger.debug(f"Execute function with ID {func_id}")
         uri = f"{self.address}/v1/functions/{func_id}/execute"
 
         # Header
         header = self.get_header(self.token)
         # Query parameters
-        qparams = self.get_qparams(app_req_id, exec_mode)
+        qparams = self.get_qparams(app_req_id, ExecutionMode.SYNC) # Temporaly set to SYNC in order to get the response
         # Encoded parameters
         serialized_params = self.get_serialized_params(params_tuple)
 
@@ -61,7 +60,7 @@ class EdgeClusterFrontendClient:
             except req.exceptions.SSLError as e:
                 if "CERTIFICATE_VERIFY_FAILED" not in str(e):
                     raise e
-                self.cognit_logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+                self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
                  # Send request with verify=False because the uri uses a self-signed certificate
                 response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
             
@@ -79,11 +78,15 @@ class EdgeClusterFrontendClient:
             self.evaluate_response(result)
 
         except req.exceptions.RequestException as e:
-            self.cognit_logger.error(f"Error during execution: {e}")
+            self.logger.error(f"Error during execution: {e}")
             raise
 
-        # Execute the callback function
-        callback(result)
+        if exec_mode == ExecutionMode.ASYNC:
+            # Execute the callback function
+            callback(result)
+            return None
+        else:
+            return result
 
     def send_metrics(self, location: str, latency: int) -> ExecResponse:
         """
@@ -95,7 +98,7 @@ class EdgeClusterFrontendClient:
         """   
 
         # Create request
-        self.cognit_logger.debug("Retriving metrics...")
+        self.logger.debug("Retriving metrics...")
         uri = self.address + "/v1/device_metrics" 
 
         # Header
@@ -107,6 +110,24 @@ class EdgeClusterFrontendClient:
         # Evaluate response
         self.evaluate_response(response)
         return response
+    
+    def evaluate_response(self, response: ExecResponse): 
+        """
+        Evaluates the response of the request
+
+        Args:
+            response (ExecResponse): Response of the request
+        """
+        if response.ret_code == 200:
+            self.logger.debug("Function execution success")
+            self.set_has_connection(True)
+        if response.ret_code == 401:
+            self.logger.debug("Token not valid, client is unauthorized")
+            self.set_has_connection(False)
+        if response.ret_code == 400:
+            self.logger.debug("Bad request. Has the token been added in the header?")
+            self.set_has_connection(False)
+
 
     def get_header(self, token: str):
         """
