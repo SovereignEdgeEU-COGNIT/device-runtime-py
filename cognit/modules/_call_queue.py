@@ -1,5 +1,5 @@
-from models._edge_cluster_frontend_client import Call
-from modules._logger import CognitLogger
+from cognit.modules._logger import CognitLogger
+from cognit.models._device_runtime import Call
 from threading import Lock
 
 class Singleton(type):
@@ -21,7 +21,7 @@ class CallQueue(metaclass=Singleton):
         self.size_limit = size_limit
         self.cognit_logger = CognitLogger()
 
-    def add_function(self, call: Call) -> bool:
+    def add_call(self, call: Call) -> bool:
 
         # Lock the queue
         self.mutex.acquire()
@@ -38,7 +38,7 @@ class CallQueue(metaclass=Singleton):
         self.mutex.release()
         return True
 
-    def get_function(self) -> Call:
+    def get_call(self) -> Call:
 
         # Lock the queue
         self.mutex.acquire()
