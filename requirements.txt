@@ -6,7 +6,6 @@ cloudpickle==2.2.1
 coverage==7.2.7
 exceptiongroup==1.1.1
 fastapi==0.95.2
-geocoder==1.38.1
 greenlet==2.0.2
 h11==0.14.0
 httpcore==0.17.2
@@ -29,4 +28,5 @@ tomli==2.0.1
 typing_extensions==4.6.2
 urllib3==2.0.3
 uvicorn==0.22.0
-python-statemachine==2.3.6
+python-statemachine==2.5.0
+
