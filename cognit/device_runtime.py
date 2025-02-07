@@ -54,7 +54,7 @@ class DeviceRuntime:
 
         # State machine initialization
         if self.sm_handler == None:
-            self.sm_handler = StateMachineHandler(self.cognit_config, init_reqs, self.call_queue, self.sync_result_queue)
+            self.sm_handler = StateMachineHandler(self.cognit_config, self.current_reqs, self.call_queue, self.sync_result_queue)
 
         # Launch SM thread
         try:
@@ -79,8 +79,10 @@ class DeviceRuntime:
             return False
 
         # Stop the SM thread
+        self.sm_handler.stop()
         self.sm_thread.join()
         self.sm_thread = None
+        self.sm_handler = None
         self.cognit_logger.info("DeviceRuntime stopped")
     
     def update_requirements(self, new_reqs: dict) -> bool:
@@ -99,24 +101,22 @@ class DeviceRuntime:
         if self.sm_thread == None:
             self.cognit_logger.error("DeviceRuntime is not running")
             return False
-        
+
         # Convert requirements into a Scheduling Object
         new_reqs = Scheduling(**new_reqs)
-        
+
         # Check new_reqs are different from the current ones
         if self.current_reqs == new_reqs:
             self.cognit_logger.error("New requirements are the same as the current ones")
             return False
         
-        # Relaunch SM thread
+        # Update the current requirements
+        are_updated = self.sm_handler.change_requirements(new_reqs)
+        if not are_updated:
+            self.cognit_logger.error("Requirements could not be updated")
+            return False
         self.current_reqs = new_reqs
-        try:
-            self.sm_thread.join()
-            self.sm_handler = StateMachineHandler(self.cognit_config, new_reqs, self.call_queue, self.sync_result_queue)
-            self.sm_thread = Thread(target=self.sm_handler.run)
-            self.sm_thread.start()
-        except Exception as e:
-            raise Exception(f"DeviceRuntime could not update requirements: {e}")
+        return True
 
     def call_async(self, function: Callable, callback: Callable, *params: tuple) -> bool:
         """
