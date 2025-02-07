@@ -46,6 +46,7 @@ class CallQueue(metaclass=Singleton):
         # Check if the queue is empty
         if len(self.queue) == 0:
             self.cognit_logger.error("CallQueue is empty")
+            self.mutex.release()
             return None
         
         # Remove the first element from the queue
