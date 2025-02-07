@@ -13,12 +13,31 @@ class StateMachineHandler():
         # Logger initialization
         self.logger = CognitLogger()
 
+        # Running flag
+        self.running = True
+
         # State machine initialization
         self.sm = DeviceRuntimeStateMachine(config, requirements, call_queue, sync_result_queue)
+
+    def change_requirements(self, new_requirements: Scheduling) -> bool:
+        """
+        Change the requirements of the Device Runtime
+
+        Args:
+            new_requirements (Scheduling): New requirements to be considered when offloading functions
+        """
+
+        return self.sm.change_requirements(new_requirements)
+    
+    def stop(self):
+        """
+        Stop the Device Runtime
+        """
+        self.running = False
     
     def run(self, interval=1):
 
-        while True:
+        while self.running:
 
             self.logger.info("Current state: " + self.sm.current_state.id)
             # Evaluate the conditions of the current state
@@ -43,12 +62,15 @@ class StateMachineHandler():
         """
         Handle the ready state
         """
-        if self.sm.is_cfc_connected() and self.sm.is_ecf_connected():
-            self.sm.result_given()
-        elif not self.sm.is_cfc_connected():
+        if not self.sm.is_cfc_connected():
             self.sm.token_not_valid_ready()
         elif not self.sm.is_ecf_connected():
             self.sm.token_not_valid_ready_2()
+        else:
+            if not self.sm.have_requirements_changed():
+                self.sm.result_given()
+            else:
+                self.sm.ready_update_requirements()
 
     def handle_init_state(self):
         """
@@ -63,24 +85,30 @@ class StateMachineHandler():
         """
         Handle the send_init_request state
         """
-        if self.sm.is_cfc_connected() and self.sm.are_requirements_uploaded():
-            self.sm.requirements_up()
-        elif not self.sm.is_cfc_connected():
-            self.sm.token_not_valid_requirements()
-        elif self.sm.is_cfc_connected() and not self.sm.are_requirements_uploaded() and not self.sm.is_requirement_upload_limit_reached():
-            self.sm.retry_requirements_upload()
-        elif self.sm.is_cfc_connected() and not self.sm.are_requirements_uploaded() and self.sm.is_requirement_upload_limit_reached():
-            self.sm.limit_requirements_upload()
+        if not self.sm.is_cfc_connected():
+            self.sm.token_not_valid_requirements()  # The connection with the CFC is lost, re-authentication is needed
+        elif not self.sm.are_requirements_uploaded():
+            if self.sm.is_requirement_upload_limit_reached():
+                self.sm.limit_requirements_upload()  # The attempt limit has been surpassed, restart the cognit frontend client
+            else:
+                self.sm.retry_requirements_upload()  # Retry uploading the requirements if the limit hasn't been reached yet
+        elif self.sm.have_requirements_changed():
+            print("Requirementes_changed: ", self.sm.have_requirements_changed())
+            self.sm.send_init_update_requirements()  # The requirements have changed, re-upload the requirements
+        else:
+            self.sm.requirements_up()  # Requirements were successfully uploaded, proceed to get the ECF address
+
 
     def handle_get_ecf_address_state(self):
         """
         Handle the get_ecf_address state
         """
-        if self.sm.is_cfc_connected() and self.sm.is_ecf_connected():
-            self.sm.address_obtained()
-        elif not self.sm.is_cfc_connected():
-            self.sm.token_not_valid_address()
-        elif self.sm.is_cfc_connected() and not self.sm.is_ecf_connected() and not self.sm.is_get_address_limit_reached():
-            self.sm.retry_get_address()
-        elif self.sm.is_cfc_connected() and not self.sm.is_ecf_connected() and self.sm.is_get_address_limit_reached():
-            self.sm.limit_get_address()
+        if not self.sm.is_cfc_connected():
+            self.sm.token_not_valid_address()  # The cognit frontend client disconnects, reauthentication is needed
+        elif self.sm.is_ecf_connected():
+            self.sm.address_obtained()  # The ECF client is connected, proceed to the ready state
+        elif self.sm.is_get_address_limit_reached():
+            self.sm.limit_get_address()  # The limit to get the address has been surpassed, restart the client
+        else:
+            self.sm.retry_get_address()  # Try to reconnect to the ECF client to get the address
+

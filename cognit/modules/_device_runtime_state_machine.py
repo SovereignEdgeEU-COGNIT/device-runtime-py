@@ -34,34 +34,39 @@ class DeviceRuntimeStateMachine(StateMachine):
     # 2. Upload requirements
 
     # 2.1 If the requirements were succesfully uploaded, it is time to obtain the address
-    requirements_up = send_init_request.to(get_ecf_address, cond=["is_cfc_connected", "are_requirements_uploaded"])
+    requirements_up = send_init_request.to(get_ecf_address, cond=["is_cfc_connected", "are_requirements_uploaded"], unless=["have_requirements_changed"])
     # 2.2 The connection with the CFC is lost, re-authentication is needed
     token_not_valid_requirements = send_init_request.to(init, unless="is_cfc_connected")
     # 2.3 The requirements could not be uploaded but the attempt limit has not reached, retry
-    retry_requirements_upload = send_init_request.to.itself(cond=["is_cfc_connected"], unless=["are_requirements_uploaded", "is_requirement_upload_limit_reached"])
+    retry_requirements_upload = send_init_request.to.itself(cond=["is_cfc_connected", "have_requirements_changed"], unless=["are_requirements_uploaded", "is_requirement_upload_limit_reached"])
     # 2.4 The attempt limit has been traspased, then the cognit frontend client is restarted
     limit_requirements_upload = send_init_request.to(init, cond=["is_cfc_connected", "is_requirement_upload_limit_reached"], unless=["are_requirements_uploaded"])
+    # 2.5 The requirements have changed, therefore, the requirements are uploaded again
+    send_init_update_requirements = send_init_request.to.itself(cond=["is_cfc_connected", "have_requirements_changed"])
 
     # 3. Get Edge Cluster Frontend address
 
     # 3.1 The ECF Client is connected. Therefore, the device runtime is ready to offload functions.
-    address_obtained = get_ecf_address.to(ready, cond=["is_ecf_connected", "is_cfc_connected"])
+    address_obtained = get_ecf_address.to(ready, cond=["is_ecf_connected", "is_cfc_connected"], unless=["have_requirements_changed"])
     # 3.2 The cognit frontend client disconnects, reauthentication is needed
     token_not_valid_address = get_ecf_address.to(init, unless="is_cfc_connected")
     # 3.3 If the ECF client is not connected, try to reconnect
     retry_get_address = get_ecf_address.to.itself(cond=["is_cfc_connected"], unless=["is_ecf_connected", "is_get_address_limit_reached"])
     # 3.4 If the process has been done over a limit times, restart the client
     limit_get_address = get_ecf_address.to(init, cond=["is_get_address_limit_reached", "is_cfc_connected"], unless=["is_ecf_connected"])
+    # 3.5 The requirements have changed, therefore, the requirements are uploaded again
+    get_address_update_requirements = get_ecf_address.to(send_init_request, cond=["is_cfc_connected", "have_requirements_changed"])
 
     # 4. Upload functions
 
     # 4.1 Request another function if the clients are connected
-    result_given = ready.to.itself(cond=["is_cfc_connected", "is_ecf_connected"])
+    result_given = ready.to.itself(cond=["is_cfc_connected", "is_ecf_connected"], unless=["have_requirements_changed"])
     # 4.2 Request new token if the one of the clients lost its connection
     token_not_valid_ready = ready.to(init, unless=["is_cfc_connected"])
     token_not_valid_ready_2 = ready.to(init, unless=["is_ecf_connected"])
+    # 4.3 The requirements have changed, therefore, the requirements are uploaded again
+    ready_update_requirements = ready.to(send_init_request, cond=["is_cfc_connected", "is_ecf_connected", "have_requirements_changed"])
   
-
     def __init__(self, config: CognitConfig, requirements: Scheduling, call_queue: CallQueue, sync_result_queue: SyncResultQueue):
         # Clients
         self.cfc = None
@@ -69,7 +74,8 @@ class DeviceRuntimeStateMachine(StateMachine):
 
         # Communication parameters
         self.token = None
-        self.requirements = Scheduling(**requirements)
+        self.requirements = requirements
+        self.new_requirements = None
         self.config = config
 
         # Counters
@@ -101,16 +107,19 @@ class DeviceRuntimeStateMachine(StateMachine):
 
         # Instantiate Cognit Frontend Client
         self.cfc = CognitFrontendClient(self.config)
+
         # This function will return if the client successfull authenticates or not
         self.token = self.cfc._authenticate()
         self.logger.debug("Token: " + str(self.token))
 
     # Upload processing requirements 
     def on_enter_send_init_request(self):
-
+        print("HIIIIIIIIIIIIIIIIII")
         if self.lc_thread is not None:
+            print("HIIIIIIIIIIIIIIIIII")
             self.lc_thread.join()
             self.lc_thread = None
+        print("HIIIIIIIIIIIIIIIIII")
 
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")
@@ -119,6 +128,9 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Upload requirements
         self.logger.debug("Uploading requirements: " + str(self.requirements))
         self.requirements_uploaded = self.cfc.init(self.requirements)
+
+        if self.requirements_uploaded:
+            self.requirements_changed = False
         
         # Increment attempt counter
         self.up_req_counter += 1
@@ -132,8 +144,10 @@ class DeviceRuntimeStateMachine(StateMachine):
     def on_enter_get_ecf_address(self):
 
         if self.lc_thread is not None:
+            self.latency_calculator.stop()
             self.lc_thread.join()
             self.lc_thread = None
+            self.latency_calculator = None
 
         # Get Edge Cluster Frontend 
         self.ecc_address = self.cfc._get_edge_cluster_address()
@@ -141,10 +155,12 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Initialize Edge Cluster client
         self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address)
 
-        # Launch latency calculator
-        self.latency_calculator = LatencyCalculator(self.ecf, self.requirements.GEOLOCATION)
-        self.lc_thread = threading.Thread(target=self.latency_calculator.run)
-        self.lc_thread.start()
+        if self.latency_calculator is not None and self.ecf.get_has_connection():
+
+            # Launch latency calculator
+            self.latency_calculator = LatencyCalculator(self.ecf, self.requirements.GEOLOCATION)
+            self.lc_thread = threading.Thread(target=self.latency_calculator.run)
+            self.lc_thread.start()
 
         # Reset attemps counter
         self.get_address_counter += 1
@@ -212,3 +228,25 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.logger.debug("Number of attempts getting Edge Cluster address: " + str(self.get_address_counter))
         self.has_address_request_limit_reached = self.get_address_counter == 3
         return self.has_address_request_limit_reached
+    
+    # Check if the requirements have changed
+    def have_requirements_changed(self):
+        self.logger.debug("Requirements changed: " + str(self.requirements_changed))
+        return self.requirements_changed
+
+    # Change the requirements of the Device Runtime
+    def change_requirements(self, new_requirements: Scheduling):
+        if self.requirements == new_requirements:
+            self.logger.error("New requirements are the same as the current ones")
+            return False
+        elif self.requirements is None:
+            self.logger.error("Requirements are None")
+            return False
+        else:
+            self.logger.debug("Changing requirements")
+            self.new_requirements = new_requirements
+            self.requirements_changed = True
+            return True
+        
+
+        

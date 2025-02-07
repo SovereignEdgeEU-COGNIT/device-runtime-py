@@ -2,7 +2,6 @@
 from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._logger import CognitLogger
 from subprocess import Popen, PIPE, STDOUT
-import threading
 import shlex  
 import time
 
@@ -15,6 +14,7 @@ class LatencyCalculator:
     def __init__(self, ecf: EdgeClusterFrontendClient, location: str, interval: int = 30):
 
         self.logger = CognitLogger()
+        self.running = True
         self.location = location
         self.interval = interval
         self.host = ecf.address.split("//")[1]
@@ -50,11 +50,21 @@ class LatencyCalculator:
 
         :param interval: The interval in seconds to calculate the latency.
         """
-        while True:
+
+        while self.running:
+
+            # Calculate the latency
             latency = self.calculate()
+
             self.logger.debug(f"Latency: {latency} ms")
             # self.ecf.send_metrics(self.location, latency)
             time.sleep(self.interval)
+
+    def stop(self):
+        """
+        Stop the latency calculator.
+        """
+        self.running = False
 
     def set_interval(self, interval: int):
         """
