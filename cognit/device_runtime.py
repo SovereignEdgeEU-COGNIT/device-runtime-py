@@ -14,6 +14,7 @@ DEFAULT_CONFIG_PATH = "cognit/config/cognit_v2.yml"
 Class to manage the Device Runtime. It is responsible for offloading functions to the Cognit Frontend
 """
 class DeviceRuntime:
+    
     def __init__(self, config_path=DEFAULT_CONFIG_PATH) -> None:
         """
         Device Runtime creation based on the configuration file defined in cognit_path
@@ -62,8 +63,25 @@ class DeviceRuntime:
         except Exception as e:
             raise Exception(f"DeviceRuntime could not be initialized: {e}")
         
-        self.cognit_logger.debug("DeviceRuntime initialized")
+        self.cognit_logger.info("DeviceRuntime initialized")
         return True
+    
+    def stop(self) -> bool:
+        """
+        Stops the SM thread
+
+        Returns:
+            bool: True if the SM thread was stopped successfully, False otherwise
+        """
+
+        if self.sm_thread == None:
+            self.cognit_logger.error("DeviceRuntime is not running")
+            return False
+
+        # Stop the SM thread
+        self.sm_thread.join()
+        self.sm_thread = None
+        self.cognit_logger.info("DeviceRuntime stopped")
     
     def update_requirements(self, new_reqs: dict) -> bool:
         """
