@@ -29,6 +29,7 @@ class CallQueue(metaclass=Singleton):
         # Check if the queue is full
         if len(self.queue) >= self.size_limit:
             self.cognit_logger.error("CallQueue is full. Call will be discarded")
+            self.mutex.release()
             return False
         
         # Add the call to the end of the queue

@@ -23,7 +23,7 @@ def test_client_success_initialization():
     # Assertions
     assert ecf.token == "the_token"
     assert ecf.address == "the_address"
-    assert ecf.has_connection == True
+    assert ecf._has_connection == True
     
 def test_client_bad_initialization():
     test_address = None
@@ -35,7 +35,7 @@ def test_client_bad_initialization():
     # Assertions
     assert ecf.token == "the_token"
     assert ecf.address == None
-    assert ecf.has_connection == False
+    assert ecf._has_connection == False
 
 def test_execute_function_if_async(
         mocker: MockerFixture,
@@ -62,13 +62,19 @@ def test_execute_function_if_async(
     # Test function
     function_id = "123"
     app_req_id = 123
-    response = ecf.execute_function(function_id, app_req_id, ExecutionMode.ASYNC, dummy_callback, (2, 3))
+    response = ecf.execute_function(
+        func_id=function_id, 
+        app_req_id=app_req_id, 
+        exec_mode=ExecutionMode.ASYNC, 
+        callback=dummy_callback, 
+        params_tuple=list((2, 3))
+    )
 
     # Assertions
     assert response == None
     assert response_received.res == "3"
     assert response_received.ret_code == ExecReturnCode.SUCCESS
-    assert ecf.has_connection == True
+    assert ecf._has_connection == True
     assert ecf.token == "the_token"
     assert ecf.address == "the_address"
     assert callback_executed == True
@@ -104,7 +110,7 @@ def test_execute_function_if_sync(
     # Assertions
     assert response.res == "3"
     assert response.ret_code == ExecReturnCode.SUCCESS
-    assert ecf.has_connection == True
+    assert ecf._has_connection == True
     assert ecf.token == "the_token"
     assert ecf.address == "the_address"
     assert callback_executed == False

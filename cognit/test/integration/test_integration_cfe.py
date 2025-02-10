@@ -1,11 +1,12 @@
-import pytest
-from pytest_mock import MockerFixture
-from cognit.modules._cognitconfig import CognitConfig
-from cognit.modules._cognit_frontend_client import CognitFrontendClient
-from cognit.modules._faas_parser import FaasParser
+from cognit.models._edge_cluster_frontend_client import ExecParams
 from cognit.models._cognit_frontend_client import FunctionLanguage, Scheduling
-from cognit.models._edge_cluster_frontend_client import Execution, ExecSyncParams
+from cognit.modules._cognit_frontend_client import CognitFrontendClient
+from cognit.modules._cognitconfig import CognitConfig
+from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
+
+from pytest_mock import MockerFixture
+import pytest
 
 """
 To run this test, a locally running Cognit Frontend Engine is needed
@@ -49,7 +50,7 @@ def sum(a: int, b: int):
     return a + b
 
 @pytest.fixture
-def serialized_fc() -> ExecSyncParams:
+def serialized_fc() -> ExecParams:
     parser = FaasParser()
     serialized_fc = parser.serialize(sum)
     mock_hash = "000-000-000"
@@ -58,7 +59,7 @@ def serialized_fc() -> ExecSyncParams:
     serialized_params.append(parser.serialize(2))
     serialized_params.append(parser.serialize(2))
 
-    fc = ExecSyncParams(
+    fc = ExecParams(
         fc=serialized_fc, 
         fc_hash=serialized_fc_hash, 
         lang=FunctionLanguage.PY
