@@ -114,12 +114,10 @@ class DeviceRuntimeStateMachine(StateMachine):
 
     # Upload processing requirements 
     def on_enter_send_init_request(self):
-        print("HIIIIIIIIIIIIIIIIII")
+
         if self.lc_thread is not None:
-            print("HIIIIIIIIIIIIIIIIII")
             self.lc_thread.join()
             self.lc_thread = None
-        print("HIIIIIIIIIIIIIIIIII")
 
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")

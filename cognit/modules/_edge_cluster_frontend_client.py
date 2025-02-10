@@ -16,6 +16,7 @@ class EdgeClusterFrontendClient:
             and the Edge Cluster Frontend
             address (str): address of the Edge Cluster Frontend
         """
+        
         self.logger = CognitLogger()
         self.set_has_connection(True)
         self.parser = FaasParser()
