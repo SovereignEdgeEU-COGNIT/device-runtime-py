@@ -84,6 +84,7 @@ class DeviceRuntime:
         self.sm_thread = None
         self.sm_handler = None
         self.cognit_logger.info("DeviceRuntime stopped")
+        return True
     
     def update_requirements(self, new_reqs: dict) -> bool:
         """

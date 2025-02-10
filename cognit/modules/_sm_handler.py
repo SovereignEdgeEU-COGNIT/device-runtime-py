@@ -93,22 +93,22 @@ class StateMachineHandler():
             else:
                 self.sm.retry_requirements_upload()  # Retry uploading the requirements if the limit hasn't been reached yet
         elif self.sm.have_requirements_changed():
-            print("Requirementes_changed: ", self.sm.have_requirements_changed())
             self.sm.send_init_update_requirements()  # The requirements have changed, re-upload the requirements
         else:
             self.sm.requirements_up()  # Requirements were successfully uploaded, proceed to get the ECF address
-
 
     def handle_get_ecf_address_state(self):
         """
         Handle the get_ecf_address state
         """
         if not self.sm.is_cfc_connected():
-            self.sm.token_not_valid_address()  # The cognit frontend client disconnects, reauthentication is needed
-        elif self.sm.is_ecf_connected():
-            self.sm.address_obtained()  # The ECF client is connected, proceed to the ready state
-        elif self.sm.is_get_address_limit_reached():
-            self.sm.limit_get_address()  # The limit to get the address has been surpassed, restart the client
+            self.sm.token_not_valid_address() 
+        elif self.sm.is_get_address_limit_reached() and self.sm.is_cfc_connected():
+            self.sm.limit_get_address() 
+        elif self.sm.is_ecf_connected() and self.sm.is_cfc_connected() and not self.sm.have_requirements_changed():
+            self.sm.address_obtained() 
+        elif self.sm.is_cfc_connected() and self.sm.have_requirements_changed():
+            self.sm.get_address_update_requirements()
         else:
-            self.sm.retry_get_address()  # Try to reconnect to the ECF client to get the address
+            self.sm.retry_get_address() 
 

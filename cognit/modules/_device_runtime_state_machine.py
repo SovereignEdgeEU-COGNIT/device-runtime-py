@@ -38,7 +38,7 @@ class DeviceRuntimeStateMachine(StateMachine):
     # 2.2 The connection with the CFC is lost, re-authentication is needed
     token_not_valid_requirements = send_init_request.to(init, unless="is_cfc_connected")
     # 2.3 The requirements could not be uploaded but the attempt limit has not reached, retry
-    retry_requirements_upload = send_init_request.to.itself(cond=["is_cfc_connected", "have_requirements_changed"], unless=["are_requirements_uploaded", "is_requirement_upload_limit_reached"])
+    retry_requirements_upload = send_init_request.to.itself(cond=["is_cfc_connected"], unless=["are_requirements_uploaded", "is_requirement_upload_limit_reached"])
     # 2.4 The attempt limit has been traspased, then the cognit frontend client is restarted
     limit_requirements_upload = send_init_request.to(init, cond=["is_cfc_connected", "is_requirement_upload_limit_reached"], unless=["are_requirements_uploaded"])
     # 2.5 The requirements have changed, therefore, the requirements are uploaded again
@@ -101,6 +101,10 @@ class DeviceRuntimeStateMachine(StateMachine):
     # Get credentials by instantiating a CognitFrontendClient and authenticates to the Cognit Frontend  
     def on_enter_init(self):
 
+        # Reset counter
+        self.up_req_counter = 0
+        self.get_address_counter = 0
+
         if self.lc_thread is not None:
             self.lc_thread.join()
             self.lc_thread = None
@@ -131,15 +135,13 @@ class DeviceRuntimeStateMachine(StateMachine):
             self.requirements_changed = False
         
         # Increment attempt counter
-        self.up_req_counter += 1
-
-    def on_exit_send_init_request(self):
-
-        # Reset counter
-        self.up_req_counter = 0
+        self.up_req_counter += 1   
 
     # Get the edge cluster address 
     def on_enter_get_ecf_address(self):
+
+        # Reset counter
+        self.up_req_counter = 0
 
         if self.lc_thread is not None:
             self.latency_calculator.stop()
@@ -163,13 +165,11 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Reset attemps counter
         self.get_address_counter += 1
 
-    def on_exit_get_ecf_address(self):
+    # State that waits for user functions offloading
+    def on_enter_ready(self):
 
         # Reset counter
         self.get_address_counter = 0
-
-    # State that waits for user functions offloading
-    def on_enter_ready(self):
 
         # Get Call
         call = self.call_queue.get_call()  # type: Call
