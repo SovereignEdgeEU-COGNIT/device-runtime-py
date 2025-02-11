@@ -1,10 +1,13 @@
-import pytest
-from pytest_mock import MockerFixture
+from cognit.modules._cognit_frontend_client import CognitFrontendClient
+from cognit.models._cognit_frontend_client import Scheduling
 from cognit.modules._cognitconfig import CognitConfig
-from cognit.modules._cognit_frontend_client import CognitFrontendClient  
-from cognit.models._cognit_frontend_client import Scheduling  
 
-COGNIT_CONF_PATH = __file__.split("cognit/")[0] + "cognit/test/config/cognit_v2.yml"
+from pytest_mock import MockerFixture
+import hashlib
+import pytest
+
+COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
+BAD_COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2_wrong_user.yml"
 
 TEST_CFE_RESPONSES = {
     "authenticate": {
@@ -32,135 +35,199 @@ TEST_CFE_RESPONSES = {
     "req_delete": {
         "status_code": 204,
     },
+    "ecf_address": {
+        "status_code": 204,
+        "body": [{"ID": 1, "NAME": "cluster001", "HOSTS": [1,2,3], "DATASTORES": [1,2,3], "VNETS": [1,2,3], "TEMPLATE": {"EDGE_CLUSTER_FRONTEND": "ecf_address"}}]
+    },
     "fun_upload": {
         "status_code": 200,
         "body": 4079  # Function ID
     }
 }
 
-REQS_INIT = {
-      "FLAVOUR": "NatureV2"
-}
-
-REQS_NEW = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 2.0,
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
+TEST_REQS_INIT = {
+      "FLAVOUR": "EnergyV2",
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
 
-REQS_WRONG = { # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is
-      "FLAVOUR": "NatureV2",
+REQS_NEW = {
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": "IKERLAN BILBAO 48007"
+}
+
+# Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  
+TEST_REQS_WRONG = { 
+      "FLAVOUR": "Energy",
       "MAX_FUNCTION_EXECUTION_TIME": 2.0,
       "MAX_LATENCY": 25,
       "MIN_ENERGY_RENEWABLE_USAGE": 85,
 }
 
-# Fixture for CognitConfig mock
 @pytest.fixture
-def test_cognit_config() -> CognitConfig:
-    return CognitConfig(COGNIT_CONF_PATH)
+def test_func() -> callable:
+    def sum(a: int, b: int):
+        return a + b
+    return sum
 
-# Fixture for CognitFrontendClient using mock config
 @pytest.fixture
-def cognit_client(test_cognit_config):
-    return CognitFrontendClient(test_cognit_config)
+def cognit_config() -> CognitConfig:
+    return CognitConfig(COGNIT_CONFIG_PATH)
 
-# Mock the post request for authentication
 @pytest.fixture
-def mock_authenticate_request(mocker):
+def bad_cognit_config() -> CognitConfig:
+    return CognitConfig(BAD_COGNIT_CONFIG_PATH)
+
+@pytest.fixture
+def cognit_client(cognit_config: CognitConfig, mocker: MockerFixture) -> CognitFrontendClient:
+
+    cfc = CognitFrontendClient(cognit_config)
+
     mock_response = mocker.Mock()
     mock_response.status_code = TEST_CFE_RESPONSES["authenticate"]["status_code"]
     mock_response.json.return_value = TEST_CFE_RESPONSES["authenticate"]["body"]
+
     mocker.patch("requests.post", return_value=mock_response)
 
-# Test _authenticate method
-def test_authenticate(cognit_client, mock_authenticate_request):
-    token = cognit_client._authenticate()
-    assert token == TEST_CFE_RESPONSES["authenticate"]["body"]
+    cfc._authenticate()
 
-# Mock the request to initialize app requirements
-@pytest.fixture
-def mock_init_request(mocker):
     mock_response = mocker.Mock()
     mock_response.status_code = TEST_CFE_RESPONSES["req_init_upload"]["status_code"]
     mock_response.json.return_value = TEST_CFE_RESPONSES["req_init_upload"]["body"]
+
     mocker.patch("requests.post", return_value=mock_response)
 
-# Test init method
-def test_init(cognit_client, mock_init_request):
-    initial_reqs = Scheduling(**REQS_INIT)
-    cognit_client.set_token("test_token")
-    cognit_client.init(initial_reqs)
-    assert cognit_client.app_req_id == TEST_CFE_RESPONSES["req_init_upload"]["body"] 
+    cfc.init(Scheduling(**TEST_REQS_INIT))
 
-# Mock the request for reading app requirements
-@pytest.fixture
-def mock_read_request(mocker):
+    return cfc
+
+# Test _authenticate method
+def test_authenticate(cognit_config: CognitConfig, mocker: MockerFixture):
+
+    cfc = CognitFrontendClient(cognit_config)
+    
+    assert cfc._has_connection is False
+    assert cfc.endpoint is not None
+    assert cfc.app_req_id is None
+    assert cfc.token is None
+
     mock_response = mocker.Mock()
-    mock_response.status_code = TEST_CFE_RESPONSES["req_read_ok"]["status_code"]
-    mock_response.json.return_value = TEST_CFE_RESPONSES["req_read_ok"]["body"]
+    mock_response.status_code = TEST_CFE_RESPONSES["authenticate"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["authenticate"]["body"]
+
+    mocker.patch("requests.post", return_value=mock_response)
+
+    token = cfc._authenticate()
+
+    assert cfc.get_has_connection() is True
+    assert token is "JWT_token"
+
+# Test init method
+def test_init_cfc(cognit_config: CognitConfig, mocker: MockerFixture):
+
+    cfc = CognitFrontendClient(cognit_config)
+    
+    assert cfc._has_connection is False
+    assert cfc.endpoint is not None
+    assert cfc.app_req_id is None
+    assert cfc.token is None
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["authenticate"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["authenticate"]["body"]
+
+    mocker.patch("requests.post", return_value=mock_response)
+
+    token = cfc._authenticate()
+
+    assert cfc.get_has_connection() is True
+    assert token is "JWT_token"
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["req_init_upload"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["req_init_upload"]["body"]
+
+    mocker.patch("requests.post", return_value=mock_response)
+
+    has_initialized = cfc.init(Scheduling(**TEST_REQS_INIT))
+
+    assert cfc.get_has_connection() is True
+    assert has_initialized is True
+    assert cfc.app_req_id is 4123
+
+def test_get_edge_cluster_address(cognit_client: CognitFrontendClient, mocker: MockerFixture):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["ecf_address"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["ecf_address"]["body"]
+
     mocker.patch("requests.get", return_value=mock_response)
 
-# Test _app_req_read method
-def test_app_req_read(cognit_client, mock_read_request):
-    response = cognit_client._app_req_read()
-    assert response == Scheduling(**TEST_CFE_RESPONSES["req_read_ok"]["body"])
+    address = cognit_client._get_edge_cluster_address()
 
-# Mock the request for updating app requirements
-@pytest.fixture
-def mock_update_request(mocker):
-    mock_response = mocker.Mock()
-    mock_response.status_code = TEST_CFE_RESPONSES["req_update"]["status_code"]
-    mock_response.json.return_value = TEST_CFE_RESPONSES["req_update"]["body"]
-    mocker.patch("requests.put", return_value=mock_response)
+    assert address == "ecf_address"
+    assert cognit_client.get_has_connection() is True
 
-# Test _app_req_update method
-def test_app_req_update(cognit_client, mock_update_request):
-    new_reqs = Scheduling(**REQS_NEW)
-    success = cognit_client._app_req_update(new_reqs)
-    assert success is True
-    
-# Test _app_req_update method with wrong requirements
-def test_app_req_update_failure(cognit_client, mock_update_request):
-    wrong_reqs = Scheduling(**REQS_WRONG)
-    success = cognit_client._app_req_update(wrong_reqs)
-    assert success is False
+def test_upload_function_to_daas(cognit_client: CognitFrontendClient, mocker: MockerFixture, test_func: callable):
 
-# Mock the request for deleting app requirements
-@pytest.fixture
-def mock_delete_request(mocker):
-    mock_response = mocker.Mock()
-    mock_response.status_code = TEST_CFE_RESPONSES["req_delete"]["status_code"]
-    mocker.patch("requests.delete", return_value=mock_response)
-
-# Test _app_req_delete method
-def test_app_req_delete(cognit_client, mock_delete_request):
-    success = cognit_client._app_req_delete()
-    assert success is True
-
-# Test _app_req_delete with failed deletion
-def test_app_req_delete_failure(cognit_client, mocker):
-    mock_response = mocker.Mock()
-    mock_response.status_code = 404
-    mock_response.json.return_value = {"detail": "Not found"}
-    mocker.patch("requests.delete", return_value=mock_response)
-
-    success = cognit_client._app_req_delete()
-    assert success is False
-
-# Mock the request for uploading a function
-@pytest.fixture
-def mock_upload_fc_request(mocker):
     mock_response = mocker.Mock()
     mock_response.status_code = TEST_CFE_RESPONSES["fun_upload"]["status_code"]
     mock_response.json.return_value = TEST_CFE_RESPONSES["fun_upload"]["body"]
+
     mocker.patch("requests.post", return_value=mock_response)
 
-def test_fc_upload(cognit_client, mock_upload_fc_request):
-    def dummy():
-        print("Test")
-        
-    _, cognit_fc_id = cognit_client._serialize_and_upload_fc_to_daas_gw(dummy)
-    assert cognit_fc_id is not None
+    function_id = cognit_client.upload_function_to_daas(test_func)
+
+    hash_func = hashlib.sha256(test_func.__code__.co_code).hexdigest()
+
+    assert cognit_client.offloaded_funs_hash_map.get(hash_func) == function_id
+    assert cognit_client.get_has_connection() is True
+    assert function_id == 4079
+
+def test_app_req_update(cognit_client: CognitFrontendClient, mocker: MockerFixture):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["req_update"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["req_update"]["body"]
+
+    mocker.patch("requests.put", return_value=mock_response)
+
+    is_updated = cognit_client._app_req_update(Scheduling(**REQS_NEW))
+
+    assert is_updated is True
+    assert cognit_client.get_has_connection() is True
+
+def test_app_req_read(cognit_client: CognitFrontendClient, mocker: MockerFixture):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["req_read_ok"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["req_read_ok"]["body"]
+
+    mocker.patch("requests.get", return_value=mock_response)
+
+    result = cognit_client._app_req_read()
+
+    assert result == Scheduling(**TEST_CFE_RESPONSES["req_read_ok"]["body"])
+
+def test_app_req_delete(cognit_client: CognitFrontendClient, mocker: MockerFixture):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["req_delete"]["status_code"]
+
+    mocker.patch("requests.delete", return_value=mock_response)
+
+    is_deleted = cognit_client._app_req_delete()
+
+    assert is_deleted is True
+
+# Test _app_req_delete with failed deletion
+def test_app_req_delete_failure(cognit_client, mocker):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = 404
+    mock_response.json.return_value = {"detail": "Not found"}
+
+    mocker.patch("requests.delete", return_value=mock_response)
+
+    is_deleted = cognit_client._app_req_delete()
+
+    assert is_deleted is False

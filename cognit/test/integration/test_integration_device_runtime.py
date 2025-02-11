@@ -22,13 +22,6 @@ REQS_NEW = {
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
 
-# Wrong: "GEOLOCATION" has to be defined when "MAX_LATENCY" is not null
-TEST_REQS_WRONG = { 
-      "FLAVOUR": "Energy",
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
-}
-
 @pytest.fixture   
 def test_func() -> callable:
     def multiply(a: int, b: int):

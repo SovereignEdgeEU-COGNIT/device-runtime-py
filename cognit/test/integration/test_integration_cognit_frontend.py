@@ -167,7 +167,7 @@ def test_cognit_frontend_upload_function_to_daas(cognit_config: CognitConfig, te
     assert function_id is not None
     assert cfc.offloaded_funs_hash_map.get(function_hash) is function_id 
 
-def test_check_function_reuploading(cognit_config: CognitConfig, test_func: callable):
+def test_check_function_reuploading(cognit_config: CognitConfig):
 
     # Instantiate CFC
     cfc = CognitFrontendClient(cognit_config)
