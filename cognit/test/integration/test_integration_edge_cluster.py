@@ -1,5 +1,4 @@
 from cognit.models._edge_cluster_frontend_client import ExecutionMode, ExecReturnCode
-from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._device_runtime_state_machine import DeviceRuntimeStateMachine
 from cognit.modules._sync_result_queue import SyncResultQueue
 from cognit.models._cognit_frontend_client import Scheduling  
@@ -7,6 +6,7 @@ from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._call_queue import CallQueue
 
 import pytest
+import time
 
 COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
@@ -14,6 +14,8 @@ TEST_REQS = {
       "FLAVOUR": "EnergyV2",
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
+
+global callback_executed, response_received
 
 @pytest.fixture
 def test_func() -> callable:
@@ -24,8 +26,7 @@ def test_func() -> callable:
 @pytest.fixture
 def dummy_callback() -> callable:
     def callback(response):
-        global callback_executed
-        global response_received
+        global callback_executed, response_received
         response_received = response
         callback_executed = True
     return callback
@@ -51,19 +52,23 @@ def ready_state_machine() -> DeviceRuntimeStateMachine:
 def test_execute_function_if_async(
         dummy_callback: callable,
         ready_state_machine: DeviceRuntimeStateMachine,
-    ):
-    
+        test_func: callable
+   ):
+
+    global callback_executed, response_received
     callback_executed = False
 
     # Initialize ECF Client
     function_id = ready_state_machine.cfc.upload_function_to_daas(test_func)
     app_req_id = ready_state_machine.cfc.get_app_requirements_id()
 
-    response = ready_state_machine.ecf.execute_function(function_id, app_req_id, ExecutionMode.ASYNC, dummy_callback, (2, 3))
+    response = ready_state_machine.ecf.execute_function(func_id=function_id, app_req_id=app_req_id, exec_mode=ExecutionMode.ASYNC, callback=dummy_callback, params_tuple=[2, 3])
+
+    time.sleep(10)
 
     # Assertions
     assert response == None
-    assert response_received.res == "3"
+    assert response_received.res == 6
     assert response_received.ret_code == ExecReturnCode.SUCCESS
     assert ready_state_machine.ecf._has_connection == True
     assert callback_executed == True
@@ -80,10 +85,10 @@ def test_execute_function_if_sync(
     function_id = ready_state_machine.cfc.upload_function_to_daas(test_func)
     app_req_id = ready_state_machine.cfc.get_app_requirements_id()
 
-    response = ready_state_machine.ecf.execute_function(function_id, app_req_id, ExecutionMode.SYNC, None, (2, 3))
+    response = ready_state_machine.ecf.execute_function(function_id, app_req_id, ExecutionMode.SYNC, None, [2, 3])
 
     # Assertions
-    assert response.res == "3"
+    assert response.res == 6
     assert response.ret_code == ExecReturnCode.SUCCESS
     assert ready_state_machine.ecf._has_connection == True
     assert callback_executed == False
