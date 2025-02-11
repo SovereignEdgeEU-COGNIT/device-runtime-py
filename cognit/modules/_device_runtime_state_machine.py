@@ -127,12 +127,16 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.logger.debug("SM: Setting sm.token to cfc token")
         self.cfc.set_token(self.token)
 
+        if self.requirements_changed:
+            self.requirements = self.new_requirements
+
         # Upload requirements
         self.logger.debug("Uploading requirements: " + str(self.requirements))
         self.requirements_uploaded = self.cfc.init(self.requirements)
 
         if self.requirements_uploaded:
             self.requirements_changed = False
+            self.new_requirements = None
         
         # Increment attempt counter
         self.up_req_counter += 1   
