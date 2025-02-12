@@ -140,7 +140,7 @@ class DeviceRuntime:
             self.cognit_logger.error("Function could not be added to the queue")
             return False
         
-    def call_sync(self, function: Callable, *params: tuple) -> ExecResponse:
+    def call(self, function: Callable, *params: tuple) -> ExecResponse:
         """
         Offloads a function synchronously
 

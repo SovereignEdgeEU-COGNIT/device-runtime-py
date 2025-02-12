@@ -176,8 +176,8 @@ def test_device_runtime_call_async(test_func: callable, dummy_callback: callable
     assert has_stop is True
     assert has_stop is True
 
-# Test user call_sync()
-def test_device_runtime_call_sync(test_func: callable):
+# Test user call()
+def test_device_runtime_call(test_func: callable):
 
     device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
 
@@ -189,7 +189,7 @@ def test_device_runtime_call_sync(test_func: callable):
     assert device_runtime.sm_thread is not None
 
     # Offload and execute a function
-    result = device_runtime.call_sync(test_func, 2, 3)
+    result = device_runtime.call(test_func, 2, 3)
 
     # Assertions
     assert result.res == 6
