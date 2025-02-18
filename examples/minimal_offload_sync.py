@@ -8,11 +8,9 @@ from cognit import device_runtime
 
 # Functions used to be uploaded
 def suma(a: int, b: int):
-    print("This is a test")
     return a + b
 
 def mult(a: int, b: int):
-    print("This is a test")
     return a * b
 
 # Workload from (7. Regression Analysis) of
@@ -43,42 +41,14 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "UC2_V2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+      "FLAVOUR": "SmartCity_ice_V2",
 }
 
 REQS_NEW = {
-      "FLAVOUR": "CybersecV2",
+      "FLAVOUR": "SmartCity_ice_V2",
       "MAX_FUNCTION_EXECUTION_TIME": 15.0,
       "MAX_LATENCY": 45,
       "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
-}
-
-# Requirements used for testing purposes
-## TEST REQS 1: MAX_LATENCY and GEOLOCATION not defined
-SIMPLE_REQS = {
-    "FLAVOUR": "NatureV2",
-    "MIN_ENERGY_RENEWABLE_USAGE": 85,
-}
-
-## TEST REQS 2: MAX_LATENCY defined but GEOLOCATION not defined
-ERROR_REQS_NO_GEOLOCATION = {
-    # With these reqs, CognitFrontendClient detects that the "GEOLOCATION" has not been defined although 
-    # the "MAX_LATENCY" has been, and as a result it gives an error and does not upload 
-    # the requirements to the CFE.
-    "FLAVOUR": "NatureV2",
-    "MIN_ENERGY_RENEWABLE_USAGE": 85,
-    "MAX_LATENCY": 45
-}
-
-## TEST REQS 3: Wrong key
-WRONG_KEY_REQS = {
-    # In this case, as the Device Runtime internally creates a 'Scheduling' type of object
-    # using the user requirements dictionary, the wrong key is omitted and the generated
-    # 'Scheduling' object is filled with the default values.
-      "FLAVOUR": "NatureV2",
-      "WRONG_KEY": 123456,
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
 
