@@ -35,7 +35,7 @@ class StateMachineHandler():
         """
         self.running = False
     
-    def run(self, interval=0.1):
+    def run(self, interval=0.05):
 
         while self.running:
 
