@@ -133,19 +133,30 @@ class CognitFrontendClient:
             Token: JSON dict containing the JWT Token
         """
         self.logger.debug(f"Requesting token for {self.config._cognit_frontend_engine_usr}")
-
         uri = f'{self.endpoint}/v1/authenticate'
-        response = req.post(url=uri, auth=HTTPBasicAuth(self.config._cognit_frontend_engine_usr, self.config.cognit_frontend_engine_cfe_pwd))
-        if response.status_code not in [200, 201]:
-            self.logger.critical(f"Token creation failed with status code: {response.status_code}")
-            self._inspect_response(response, "_authenticate.error")
+
+        # Authenticate using HTTPBasicAuth if username and password are provided
+        try:
+            response = req.post(url=uri, auth=HTTPBasicAuth(self.config._cognit_frontend_engine_usr, self.config.cognit_frontend_engine_cfe_pwd))
+
+            if response.status_code not in [200, 201]:
+                self.logger.critical(f"Token creation failed with status code: {response.status_code}")
+                self._inspect_response(response, "_authenticate.error")
+                return None
+            
+        except req.exceptions.RequestException as e:
+            self.logger.critical(f"Token creation failed with exception: {e}")
+            self.set_has_connection(False)
             return None
+        
         self.token = response.json()
-        # logger.warning(f"\n\n[Auth] ---- {self.token}\n\n")
         if self.token:
             self.set_has_connection(True)
-        # logger.warning(self.token)
-        return self.token
+            return self.token
+        else:
+            self.logger.critical("Token creation failed, token is None")
+            self.set_has_connection(False)
+            return None
     
     def _app_req_update(self, new_reqs:Scheduling) -> bool:
         """
