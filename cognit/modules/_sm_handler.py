@@ -54,7 +54,6 @@ class StateMachineHandler():
         elif self.sm.current_state.id == "init":
             self.handle_init_state()
         elif self.sm.current_state.id == "send_init_request":
-            self.logger.info("Now in send_init_request state")
             self.handle_send_init_request_state()
         elif self.sm.current_state.id == "get_ecf_address":
             self.handle_get_ecf_address_state()

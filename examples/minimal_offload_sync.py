@@ -84,9 +84,9 @@ try:
     are_updated = my_device_runtime.update_requirements(REQS_NEW)
 
     if (are_updated):
-        print("Requirements updated")
+        print("Requirements: "+ str(REQS_NEW) + " UPDATED!")
     else:   
-        print("Requirements not updated")
+        print("Requirements: "+ str(REQS_NEW) + "NOT UPDATED!")
 
     # Offload asyncronously a function
     my_device_runtime.call_async(suma, get_result, 100, 10)
@@ -109,9 +109,9 @@ try:
     are_updated = my_device_runtime.update_requirements(REQS_ML)
 
     if (are_updated):
-        print("Requirements updated")
+        print("Requirements: "+ str(REQS_ML) + " UPDATED!")
     else:   
-        print("Requirements not updated")
+        print("Requirements: "+ str(REQS_ML) + "NOT UPDATED!")
 
     # More complex function
     # Offload and execute ml_workload function
