@@ -105,7 +105,9 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.up_req_counter = 0
         self.get_address_counter = 0
 
-        if self.lc_thread is not None:
+        if self.latency_calculator is not None:
+            self.latency_calculator.stop()
+            self.latency_calculator = None
             self.lc_thread.join()
             self.lc_thread = None
 
@@ -119,10 +121,12 @@ class DeviceRuntimeStateMachine(StateMachine):
     # Upload processing requirements 
     def on_enter_send_init_request(self):
 
-        if self.lc_thread is not None:
+        if self.latency_calculator is not None:
+            self.latency_calculator.stop()
+            self.latency_calculator = None
             self.lc_thread.join()
             self.lc_thread = None
-
+            
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")
         self.cfc.set_token(self.token)
@@ -147,11 +151,11 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Reset counter
         self.up_req_counter = 0
 
-        if self.lc_thread is not None:
+        if self.latency_calculator is not None:
             self.latency_calculator.stop()
+            self.latency_calculator = None
             self.lc_thread.join()
             self.lc_thread = None
-            self.latency_calculator = None
 
         # Get Edge Cluster Frontend 
         self.ecc_address = self.cfc._get_edge_cluster_address()
@@ -159,10 +163,10 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Initialize Edge Cluster client
         self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address)
 
-        if self.latency_calculator is not None and self.ecf.get_has_connection():
+        if self.latency_calculator is None and self.ecf.get_has_connection():
 
             # Launch latency calculator
-            self.latency_calculator = LatencyCalculator(self.ecf, self.requirements.GEOLOCATION)
+            self.latency_calculator = LatencyCalculator(self.ecf)
             self.lc_thread = threading.Thread(target=self.latency_calculator.run)
             self.lc_thread.start()
 

@@ -52,6 +52,15 @@ REQS_NEW = {
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
 
+REQS_ML = {
+      "FLAVOUR": "EnergyV2",
+      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+      "MAX_LATENCY": 45,
+      "MIN_ENERGY_RENEWABLE_USAGE": 75,
+      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+}
+
+
 def get_result(result):
     print("*************************************************")
     print("Sync result: " + str(result))
@@ -72,7 +81,12 @@ try:
     print("-----------------------------------------------")
 
     # Update the requirements
-    my_device_runtime.update_requirements(REQS_NEW)
+    are_updated = my_device_runtime.update_requirements(REQS_NEW)
+
+    if (are_updated):
+        print("Requirements updated")
+    else:   
+        print("Requirements not updated")
 
     # Offload asyncronously a function
     my_device_runtime.call_async(suma, get_result, 100, 10)
@@ -91,6 +105,14 @@ try:
     print("Wrong result: " + str(result))
     print("-----------------------------------------------")
 
+    # Update the requirements
+    are_updated = my_device_runtime.update_requirements(REQS_ML)
+
+    if (are_updated):
+        print("Requirements updated")
+    else:   
+        print("Requirements not updated")
+
     # More complex function
     # Offload and execute ml_workload function
     start_time = time.perf_counter()
@@ -101,6 +123,15 @@ try:
     print("Predicted Y: " + str(result))
     print(f"Execution time: {(end_time-start_time):.6f} seconds")
     print("--------------------------------------------------------")
+
+    time.sleep(5)
+
+    # Offload and execute a function
+    result = my_device_runtime.call(mult, 9, 12)
+
+    print("-----------------------------------------------")
+    print("Multiply sync result: " + str(result))
+    print("----------------------------------------------------")
 
 except Exception as e:
     print("An exception has occured: " + str(e))
