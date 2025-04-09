@@ -62,7 +62,7 @@ class EdgeClusterFrontendClient:
                 if "CERTIFICATE_VERIFY_FAILED" not in str(e):
                     raise e
                 self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
-                 # Send request with verify=False because the uri uses a self-signed certificate
+                # Send request with verify=False because the uri uses a self-signed certificate
                 response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
             
             # Check if the response is successful
@@ -89,7 +89,7 @@ class EdgeClusterFrontendClient:
         else:
             return result
 
-    def send_metrics(self, location: str, latency: int) -> ExecResponse:
+    def send_metrics(self, latency: int) -> bool:
         """
         Collects current device location and latency and sends it to the Edge Cluster Frontend 
 
@@ -99,24 +99,23 @@ class EdgeClusterFrontendClient:
         """   
 
         # Create request
-        self.logger.debug("Retriving metrics...")
-        uri = self.address + "/v1/device_metrics" 
+        self.logger.debug("Sending metrics...")
+        # uri = self.address + "/v1/device_metrics" 
 
-        # Header
-        header = self.get_header(self.token)
-        try:
-            response = req.post(uri, headers=header, data={"location": location, "latency": latency})
-        except req.exceptions.SSLError as e:
-            if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-                raise e
-            self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+        # # Header
+        # header = self.get_header(self.token)
+        # try:
+        #     response = req.post(uri, headers=header, data={"latency": latency})
+        # except req.exceptions.SSLError as e:
+        #     if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+        #         raise e
+        #     self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
             
-            # Send request with verify=False because the uri uses a self-signed certificate
-            response = req.post(uri, headers=header, data={"location": location, "latency": latency})       
-
-        # Evaluate response
-        self.evaluate_response(response)
-        return response
+        #     # Send request with verify=False because the uri uses a self-signed certificate
+        #     response = req.post(uri, headers=header, data={"latency": latency}, verify=False)       
+        # self.logger.debug(str(response.status_code))
+        # # return response.status_code == 200
+        return True
     
     def evaluate_response(self, response: ExecResponse): 
         """

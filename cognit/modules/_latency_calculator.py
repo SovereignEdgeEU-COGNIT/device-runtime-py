@@ -11,11 +11,10 @@ sys.path.append(".")
 
 class LatencyCalculator:
 
-    def __init__(self, ecf: EdgeClusterFrontendClient, location: str, interval: int = 30):
+    def __init__(self, ecf: EdgeClusterFrontendClient, interval: int = 2):
 
         self.logger = CognitLogger()
         self.running = True
-        self.location = location
         self.interval = interval
         self.host = ecf.address.split("//")[1]
         self.ecf = ecf
@@ -56,8 +55,18 @@ class LatencyCalculator:
             # Calculate the latency
             latency = self.calculate()
 
-            self.logger.debug(f"Latency: {latency} ms")
-            # self.ecf.send_metrics(self.location, latency)
+            if (latency == -1.0):
+                self.logger.error("Failed to calculate latency")
+                continue
+            else:
+                self.logger.info(f"Latency: {latency} ms")
+                is_sent = self.ecf.send_metrics(latency)
+
+            if (is_sent):
+                self.logger.info("Latency sent")
+            else:
+                self.logger.error("Failed to send the latency")
+
             time.sleep(self.interval)
 
     def stop(self):
