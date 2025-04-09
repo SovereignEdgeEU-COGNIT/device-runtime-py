@@ -53,7 +53,7 @@ REQS_NEW = {
 }
 
 REQS_ML = {
-      "FLAVOUR": "EnergyV2",
+      "FLAVOUR": "NatureV2",
       "MAX_FUNCTION_EXECUTION_TIME": 15.0,
       "MAX_LATENCY": 45,
       "MIN_ENERGY_RENEWABLE_USAGE": 75,
