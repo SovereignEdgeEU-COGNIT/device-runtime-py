@@ -15,7 +15,7 @@ Class to manage the FIFO queue of functions to be executed.
 """
 class CallQueue(metaclass=Singleton):
 
-    def __init__(self, size_limit: int = 5):
+    def __init__(self, size_limit: int = 50):
         self.queue = []
         self.mutex = Lock()
         self.size_limit = size_limit
@@ -46,7 +46,7 @@ class CallQueue(metaclass=Singleton):
 
         # Check if the queue is empty
         if len(self.queue) == 0:
-            self.cognit_logger.error("CallQueue is empty")
+            self.cognit_logger.debug("CallQueue is empty")
             self.mutex.release()
             return None
         
