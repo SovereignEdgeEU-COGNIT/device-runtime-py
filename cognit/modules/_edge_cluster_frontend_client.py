@@ -100,22 +100,23 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug("Sending metrics...")
-        # uri = self.address + "/v1/device_metrics" 
+        uri = self.address + "/v1/device_metrics"
+        # Header
+        header = self.get_header(self.token)
+        # JSON payload
+        payload = {"latency": latency} 
 
-        # # Header
-        # header = self.get_header(self.token)
-        # try:
-        #     response = req.post(uri, headers=header, data={"latency": latency})
-        # except req.exceptions.SSLError as e:
-        #     if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-        #         raise e
-        #     self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+        try:
+            response = req.post(uri, headers=header, json=payload)
+        except req.exceptions.SSLError as e:
+            if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+                raise e
+            self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
             
-        #     # Send request with verify=False because the uri uses a self-signed certificate
-        #     response = req.post(uri, headers=header, data={"latency": latency}, verify=False)       
-        # self.logger.debug(str(response.status_code))
-        # # return response.status_code == 200
-        return True
+            # Send request with verify=False because the uri uses a self-signed certificate
+            response = req.post(uri, headers=header, json=payload, verify=False)
+
+        return response.status_code == 200
     
     def evaluate_response(self, response: ExecResponse): 
         """
