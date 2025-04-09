@@ -5,6 +5,9 @@ import requests as req
 import pydantic
 import json
 
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 class EdgeClusterFrontendClient:
 
     def __init__(self, token: str, address: str):
@@ -61,7 +64,7 @@ class EdgeClusterFrontendClient:
             except req.exceptions.SSLError as e:
                 if "CERTIFICATE_VERIFY_FAILED" not in str(e):
                     raise e
-                self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+                self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
                 # Send request with verify=False because the uri uses a self-signed certificate
                 response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
             
@@ -111,7 +114,7 @@ class EdgeClusterFrontendClient:
         except req.exceptions.SSLError as e:
             if "CERTIFICATE_VERIFY_FAILED" not in str(e):
                 raise e
-            self.logger.warning(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+            self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
             
             # Send request with verify=False because the uri uses a self-signed certificate
             response = req.post(uri, headers=header, json=payload, verify=False)
