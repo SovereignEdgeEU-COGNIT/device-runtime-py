@@ -10,7 +10,7 @@
 - Independent thread that sends latency metrics to the `EdgeClusterFrontend`: `LatencyCalculator`
 - `StateMachineHandler` manages the state machine transitions.
 - Queues for message exchange between threads: `CallQueue` and `SyncResultQueue`.
-- DeviceRuntime `call_async`, `stop` and `update_requirements` functions.
+- DeviceRuntime `call_async` and `stop` functions.
 - DeviceRuntime data models.
 
 ### Changed
