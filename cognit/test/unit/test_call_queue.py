@@ -4,8 +4,8 @@ from cognit.modules._call_queue import CallQueue
 import pytest
 
 @pytest.fixture
-def call_queue(5) -> CallQueue:
-    return CallQueue()
+def call_queue() -> CallQueue:
+    return CallQueue(5)
 
 def sum(a: int, b: int):
     return a + b
