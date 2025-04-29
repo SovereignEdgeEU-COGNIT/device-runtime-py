@@ -1,44 +1,26 @@
-import pytest
-
 from cognit.models._edge_cluster_frontend_client import ExecReturnCode
 from cognit.models._cognit_frontend_client import Scheduling 
 from cognit.modules._faas_parser import FaasParser
 from cognit.device_runtime import DeviceRuntime
 
+import pytest
+import time 
 
-TEST_REQS_INIT = {
-      "FLAVOUR": "Energy",
-      "MAX_FUNCTION_EXECUTION_TIME": 2.0,
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
+COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
+
+# Execution requirements, dependencies and policies
+REQS_INIT = {
+      "FLAVOUR": "EnergyV2",
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
 
-TEST_REQS_NEW = {
-      "FLAVOUR": "SmartCity",
+REQS_NEW = {
+      "FLAVOUR": "NatureV2",
       "MAX_FUNCTION_EXECUTION_TIME": 3.0,
       "MAX_LATENCY": 45,
       "MIN_ENERGY_RENEWABLE_USAGE": 75,
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }
-
-# Wrong: "GEOLOCATION" has to be defined when "MAX_LATENCY" is not null
-TEST_REQS_WRONG = { 
-      "FLAVOUR": "Energy",
-      "MAX_FUNCTION_EXECUTION_TIME": 2.0,
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
-}
-
-@pytest.fixture   
-def initial_requirements() -> Scheduling:
-    init_req = Scheduling(**TEST_REQS_INIT)
-    return init_req
-
-@pytest.fixture   
-def new_requirements() -> Scheduling:
-    new_req = Scheduling(**TEST_REQS_NEW)
-    return new_req
 
 @pytest.fixture   
 def test_func() -> callable:
@@ -47,109 +29,174 @@ def test_func() -> callable:
     return multiply
 
 # Test init() is executed correctly
-def test_device_runtime_init(initial_requirements: Scheduling):
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
-    # Initialize device runtime
-    device_runtime.init(TEST_REQS_INIT)
-    # Assertions
-    assert device_runtime.device_runtime_sm.current_state.id == "get_ecf_address"
-    assert device_runtime.device_runtime_sm.requirements == initial_requirements
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements_uploaded is True
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
+def test_device_runtime_init():
 
-# Test if bad requirements for init() where provided
-def test_device_runtime_init_bad_requirements_provided():
     # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
     # Initialize device runtime
-    device_runtime.init(TEST_REQS_WRONG)
+    has_init = device_runtime.init(REQS_INIT)
+
     # Assertions
-    assert device_runtime.device_runtime_sm.current_state.id == "init"
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements_uploaded is False
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
+    assert has_init is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+
+    # Stop
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    assert has_stop is True
+    assert device_runtime.sm_handler is None
+    assert device_runtime.sm_thread is None
+
+# Test init() is executed two times
+def test_device_runtime_init_two_times():
+
+    # Instantiate DeviceRuntime
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
+    # Initialize device runtime
+    has_init = device_runtime.init(REQS_INIT)
+    has_init2 = device_runtime.init(REQS_INIT)
+
+    # Assertions
+    assert has_init is True
+    assert has_init2 is False
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+
+    # Stop
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    assert has_stop is True
+    assert device_runtime.sm_handler is None
+    assert device_runtime.sm_thread is None 
+
+# Test stop()
+def test_device_runtime_stop():
+
+    # Instantiate DeviceRuntime
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
+    # Initialize device runtime
+    has_init = device_runtime.init(REQS_INIT)
+
+    assert has_init is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    
+    assert has_stop is True
+    assert device_runtime.sm_handler is None
+    assert device_runtime.sm_thread is None
 
 # Test user is able to update its requirements
-def test_device_runtime_update_requirements(new_requirements: Scheduling):
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
-    # Initialize device runtime
-    device_runtime.init(TEST_REQS_INIT)
-    # Update requirements
-    device_runtime.init(TEST_REQS_NEW)
-    # Assertions
-    assert device_runtime.device_runtime_sm.current_state.id == "get_ecf_address"
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements == new_requirements
-    assert device_runtime.device_runtime_sm.requirements_uploaded is True
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
+def test_device_runtime_update_requirements():
 
-def test_device_runtime_upload_empty_requirements():
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
-    # Initialize device runtime with none req and asset if correct exception is given
-    with pytest.raises(TypeError):
-        device_runtime.init(None)
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
 
-def test_device_runtime_call(
-        initial_requirements: Scheduling,
-        test_func: callable
-    ):
-    parser = FaasParser()
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
     # Initialize device runtime
-    device_runtime.init(TEST_REQS_INIT)
-    # Offload function according with initial_requirements
-    return_code, result = device_runtime.call(test_func, 2, 3)
-    # Assertions
-    assert device_runtime.device_runtime_sm.requirements == initial_requirements
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.ecf.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements_uploaded is True
-    assert device_runtime.device_runtime_sm.current_state.id == "ready"
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
-    assert return_code == ExecReturnCode.SUCCESS
-    assert result == 6
+    has_init = device_runtime.init(REQS_INIT)
 
-def test_device_runtime_call_with_new_reqs(
-        new_requirements: Scheduling,
-        test_func: callable
-    ):
-    parser = FaasParser()
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
-    # Initialize device runtime
-    device_runtime.init(TEST_REQS_INIT)
-    # Offload function according with initial_requirements
-    return_code, result = device_runtime.call(test_func, 2, 3, new_reqs=TEST_REQS_NEW)
-    # Assertions
-    assert device_runtime.device_runtime_sm.requirements == new_requirements
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.ecf.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements_uploaded is True
-    assert device_runtime.device_runtime_sm.current_state.id == "ready"
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
-    assert return_code == ExecReturnCode.SUCCESS
-    assert result == 6
+    assert has_init is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
 
-def test_device_runtime_call_with_bad_params(
-        test_func: callable
-    ):
-    parser = FaasParser()
-    # Instantiate DeviceRuntime
-    device_runtime = DeviceRuntime("cognit/test/config/cognit_v2.yml")
-    # Initialize device runtime
-    device_runtime.init(TEST_REQS_INIT)
-    # Offload function according with initial_requirements
-    return_code, result = device_runtime.call(test_func, "hello", new_reqs=TEST_REQS_NEW)
+    has_update = device_runtime.update_requirements(REQS_NEW)
+
     # Assertions
-    assert device_runtime.device_runtime_sm.cfc.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.ecf.get_has_connection() is True
-    assert device_runtime.device_runtime_sm.requirements_uploaded is True
-    assert device_runtime.device_runtime_sm.current_state.id == "ready"
-    assert device_runtime.device_runtime_sm.is_token_empty() is False
-    assert return_code == ExecReturnCode.ERROR
-    assert result == "Error executing function: test_func.<locals>.multiply() missing 1 required positional argument: 'b'"
+    assert has_update is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+    assert device_runtime.current_reqs == REQS_NEW
+
+    # Stop Device Runtime
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    assert has_stop is True
+
+# Test user is not able to update its requirements if the Device Runtime is not running
+def test_device_runtime_update_requirements_not_running():
+
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
+    has_update = device_runtime.update_requirements(REQS_NEW)
+
+    # Assertions
+    assert has_update is False
+    assert device_runtime.current_reqs is None
+
+# Global variables
+callback_executed = False
+response_received = None
+
+@pytest.fixture
+def dummy_callback():
+    global callback_executed, response_received
+    def callback(response):
+        global callback_executed, response_received
+        response_received = response
+        callback_executed = True
+    return callback
+
+# Test user call_async()
+def test_device_runtime_call_async(test_func: callable, dummy_callback: callable):
+    global callback_executed, response_received
+
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
+    # Initialize device runtime
+    has_init = device_runtime.init(REQS_INIT)
+
+    assert has_init is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+
+    # Offload and execute a function
+    was_called = device_runtime.call_async(test_func, dummy_callback, 2, 3)
+
+    time.sleep(10)
+
+    # Assertions
+    assert was_called is True
+    assert callback_executed is True
+    assert response_received.res == 6
+    assert response_received.ret_code == ExecReturnCode.SUCCESS
+
+    # Stop Device Runtime
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    assert has_stop is True
+    assert has_stop is True
+
+# Test user call()
+def test_device_runtime_call(test_func: callable):
+
+    device_runtime = DeviceRuntime(COGNIT_CONFIG_PATH)
+
+    # Initialize device runtime
+    has_init = device_runtime.init(REQS_INIT)
+
+    assert has_init is True
+    assert device_runtime.sm_handler is not None
+    assert device_runtime.sm_thread is not None
+
+    # Offload and execute a function
+    result = device_runtime.call(test_func, 2, 3)
+
+    # Assertions
+    assert result.res == 6
+    assert result.ret_code == ExecReturnCode.SUCCESS
+
+    # Stop Device Runtime
+    has_stop = device_runtime.stop()
+
+    # Assertions
+    assert has_stop is True

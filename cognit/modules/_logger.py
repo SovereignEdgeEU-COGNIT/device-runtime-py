@@ -11,7 +11,7 @@ class CognitLogger:
         self.verbose = verbose
         if not self.logger.hasHandlers():
             self.logger.propagate = False
-            self.logger.setLevel(logging.DEBUG)
+            self.logger.setLevel(logging.WARNING)
             formatter = logging.Formatter("[%(asctime)5s] [%(levelname)-s] %(message)s")
             handler = logging.StreamHandler()
             handler.setFormatter(formatter)
