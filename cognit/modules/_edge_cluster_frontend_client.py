@@ -35,7 +35,7 @@ class EdgeClusterFrontendClient:
         self.token = token
         self.address = address
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None | ExecResponse:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 50) -> None | ExecResponse:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
