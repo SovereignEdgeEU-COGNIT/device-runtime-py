@@ -57,11 +57,11 @@ def create_bucket(bucket_name):
   
 def upload_data(bucket_name, minio_path, data, extraArgs=None):
     """
-    Upload a simple JSON file with the following structure to Minio:
-    {
-        "a": 100,
-        "b": 200
-    }
+    Upload an object to MinIO.
+    :param bucket_name: Name of the bucket.
+    :param minio_path: Path to the object in MinIO.
+    :param data: Data to upload (as bytes).
+    :param extraArgs: Extra arguments for the upload, such as metadata (optional).
     """
     try:
         # MINIO_ENDPOINT = "http://192.168.120.100:9000" # TESTBED
@@ -79,7 +79,8 @@ def upload_data(bucket_name, minio_path, data, extraArgs=None):
         minio_client.upload_object(
             bucket=bucket_name,
             objectPath=minio_path,
-            data=data
+            data=data,
+            extraArgs=extraArgs
         )
         return f"Uploaded JSON file to {bucket_name}/{minio_path}"
     except Exception as e:
@@ -135,45 +136,43 @@ try:
     minio_path = "test/test.json" # minio will automatically create a folder named "test" in the bucket and create the file "test.json" inside
     
     # List buckets
-    return_code, result = my_device_runtime.call(minio_list_buckets)
-    print("Status code: " + str(return_code))
-    print("Available buckets: " + str(result))
-    print("\n#######################################\n")
+    # return_code, result = my_device_runtime.call(minio_list_buckets)
+    result = my_device_runtime.call(minio_list_buckets)
+    # print("Status code: " + str(return_code))
+    print("Available buckets: " + str(result.res))
+    print("######################################\n")
     
     # If necessary, create the bucket:
-    if bucket_name not in result:
-        return_code, result = my_device_runtime.call(create_bucket, bucket_name)
-        print("Status code: " + str(return_code))
-        print("Bucket creation result: " + str(result))
-        print("\n#######################################\n")
+    if bucket_name not in result.res:
+        result = my_device_runtime.call(create_bucket, bucket_name)
+        print("Bucket creation result: " + str(result.res))
+        print("######################################\n")
     # Upload data
     
     simple_dict = {"a": 100, "b": 200, "testID":133}
     # Convert dict to JSON and then to bytes
     json_data = json.dumps(simple_dict).encode("utf-8")
-    return_code, result_msg = my_device_runtime.call(upload_data, bucket_name, minio_path, json_data, {'ContentType': 'application/json'})
-    print("Status code: " + str(return_code))
-    print("Upload result: " + str(result_msg))
-    print("\n#######################################\n")
+    result = my_device_runtime.call(upload_data, bucket_name, minio_path, json_data, {'ContentType': 'application/json'})
+    print("Upload result: " + str(result.res))
+    print("######################################\n")
     
-    return_code, data = my_device_runtime.call(download_data_to_memory, bucket_name, minio_path)
-    print("Status code: " + str(return_code))
+    result = my_device_runtime.call(download_data_to_memory, bucket_name, minio_path)
+    data = result.res
     if data is not None:
         print("Data retrieved: " + str(data))
         # text = data.decode('utf-8')        # for text files
         obj  = json.loads(data)            # for JSON
         print(obj)
         # img  = Image.open(BytesIO(data))   # for images
-    print("\n#######################################\n")
+        print("######################################\n")
     
     # Example of download to disk
-    return_code, data = my_device_runtime.call(download_data_to_disk, bucket_name, minio_path, "/tmp/test.json")
-    print("Status code: " + str(return_code))
+    result = my_device_runtime.call(download_data_to_disk, bucket_name, minio_path, "/tmp/test.json")
+    data = result.res
     if data is not None:
         print("Download path: " + str(data))
-        
-    print("\n#######################################\n")
-    print("\n#######################################\n")
+        print("######################################\n")
+    print("######################################\n")
 
 
 except Exception as e:
