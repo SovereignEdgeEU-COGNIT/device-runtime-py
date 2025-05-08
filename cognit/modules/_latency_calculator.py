@@ -30,15 +30,19 @@ class LatencyCalculator:
         """
         Calculate the latency of the host.
         """
-        cmd = f"ping -c 1 {self.host}"
-        output = self.get_simple_cmd_output(cmd)
-        latency_line = output.strip().split("\n")[1]
-        
         # Extracting time=XXXms from the last line
+        latency_line = None
         try:
+            cmd = f"ping -c 1 {self.host}"
+            output = self.get_simple_cmd_output(cmd)
+            latency_line = output.strip().split("\n")[1]
             latency = float(latency_line.split("time=")[-1].split()[0])
         except (IndexError, ValueError):
-            self.logger.error("Failed to parse latency from:", latency_line)
+            if latency_line:
+                self.logger.error("Failed to parse latency from:", latency_line)
+            else:
+                pass
+                # self.logger.error(f"Failed to parse latency from host: {self.host}")
             return -1.0  # Return -1.0 if parsing fails
 
         return latency
@@ -56,7 +60,7 @@ class LatencyCalculator:
             latency = self.calculate()
 
             if (latency == -1.0):
-                self.logger.error("Failed to calculate latency")
+                # self.logger.error("Failed to calculate latency")
                 continue
             else:
                 self.logger.info(f"Latency: {latency} ms")
