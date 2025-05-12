@@ -59,7 +59,8 @@ So for the above structure, the import should be:
   - Upload raw bytes (`data`) to `bucket` at key `objectPath`, with optional `extraArgs` (metadata, ACL).
   
 - `download_object(bucket: str, key: str, download_path: str = None) -> Union[bytes, str, Exception]`
-  - If `download_path` is provided, save the object to that Device Runtime path and return the path; otherwise return raw bytes.
+  - If `download_path` is provided, save the object to that **Serverless Runtime** path and return the path; otherwise return raw bytes.
+  > ***WARNING***: If `download_path` is provided, the downloaded file stays in the SR, meaning that no data is transferred back to the DR.
   
 - `delete_object(bucket_name, object_name)`
   - Delete a single object from a bucket.
@@ -80,3 +81,5 @@ So for the above structure, the import should be:
     - If `preserve_nested_structure` is `False`, files are flattened into `target_local_directory`.
     - If `True`, the full key path under `prefix` is recreated under `target_local_directory`.
 
+- `download_object(bucket: str, key: str, download_path: str = None) -> Union[bytes, str, Exception]`
+  - For the cases that `download_path` is provided, as it is explained in "*Object level methods*" section.
