@@ -83,7 +83,7 @@ class EdgeClusterFrontendClient:
 
         except req.exceptions.RequestException as e:
             self.logger.error(f"Error during execution: {e}")
-            raise
+            raise e
 
         if exec_mode == ExecutionMode.ASYNC:
             # Execute the callback function
