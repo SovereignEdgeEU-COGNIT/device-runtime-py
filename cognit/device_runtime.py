@@ -130,7 +130,7 @@ class DeviceRuntime:
         """
 
         # Create a Call object
-        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.ASYNC, callback=callback, params=params)
+        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.ASYNC, callback=callback, params=params, timeout=None)
 
         # Add the call to the queue
         if self.call_queue.add_call(call):
@@ -140,7 +140,7 @@ class DeviceRuntime:
             self.cognit_logger.error("Function could not be added to the queue")
             return False
         
-    def call(self, function: Callable, *params: tuple) -> ExecResponse:
+    def call(self, function: Callable, *params: tuple, timeout: int = None) -> ExecResponse:
         """
         Offloads a function synchronously
 
@@ -150,7 +150,7 @@ class DeviceRuntime:
         """
 
         # Create a Call object
-        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.SYNC, callback=None, params=params)
+        call = Call(function=function, fc_lang=FunctionLanguage.PY, mode=ExecutionMode.SYNC, callback=None, params=params, timeout=timeout)
 
         # Add the call to the queue
         if self.call_queue.add_call(call):

@@ -25,6 +25,10 @@ class Call(BaseModel):
         description="The mode of execution of the offloaded function (SYNC or ASYNC)")
     params: List[Any] = Field(
         description="A list containing the function parameters encoded in base64")
+    timeout: int | None = Field(
+        default=None,
+        description="The timeout for the offloaded function execution in seconds",
+    )
     
 class ExecResponse(BaseModel):
     ret_code: ExecReturnCode = Field(
