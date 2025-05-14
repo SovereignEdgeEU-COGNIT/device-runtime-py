@@ -236,11 +236,14 @@ def run_minio_example():
         
         
         ### Test with large file (3.7MB).
-        ### Previously downloaded to device running the DR using -> github-device-runtime-py/examples$ wget https://data.gharchive.org/2015-01-01-15.json.gz
-        if False: # Tested, but gives exception currently
+        ### Previously downloaded to device running the DR using: `github-device-runtime-py/examples$ wget https://data.gharchive.org/2015-01-01-15.json.gz``
+        if True: # Tested, but gives exception currently
             try:
                 run_rest_large_files(my_device_runtime, bucket_name)
-                # It gives: HTTPError: 413 Client Error: Request Entity Too Large for url: https://194.28.122.87/v1/functions/20666/execute?app_req_id=20669&mode=sync
+                # If it gives:
+                # "HTTPError: 413 Client Error: Request Entity Too Large for url..."
+                # then it means that the file size is larger thant the one
+                # allowed in the NGINX configuration of the edge cluster frontend.
             except Exception as e:
                 print("An exception has occured: " + str(e))
                 print("######################################\n")
