@@ -199,11 +199,11 @@ class DeviceRuntimeStateMachine(StateMachine):
                 try:
                     if call.mode == "sync":
                         # Execute function
-                        result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params) 
+                        result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout) 
                         # Add result to the queue
                         self.sync_results_queue.add_sync_result(result)
                     else:
-                        self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params)
+                        self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout)
                 except Exception as e:
                     self.logger.error("There was a request error. Detailed message: {0}".format(e))
                          
