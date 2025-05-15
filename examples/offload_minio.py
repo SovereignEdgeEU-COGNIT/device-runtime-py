@@ -177,7 +177,7 @@ def recursive_cleanup():
     return len(minio_client.list_buckets()) == 0 # Returns True if all buckets have been deleted
 
 
-def run_rest_large_files(my_device_runtime, bucket_name): # Currently (12/05/2025) not working
+def run_rest_large_files(my_device_runtime, bucket_name):
     # 1. Upload to MinIO
     minio_path = "test/test_large_file.json.gz"
     with open("examples/2015-01-01-15.json.gz", "rb") as f:
@@ -225,6 +225,7 @@ def run_minio_example():
         
         result = my_device_runtime.call(download_data_to_memory, bucket_name, minio_path)
         data = result.res
+        data = None
         if data is not None:
             print("Data retrieved: " + str(data))
             # text = data.decode('utf-8')        # for text files
@@ -237,7 +238,7 @@ def run_minio_example():
         
         ### Test with large file (3.7MB).
         ### Previously downloaded to device running the DR using: `github-device-runtime-py/examples$ wget https://data.gharchive.org/2015-01-01-15.json.gz``
-        if True: # Tested, but gives exception currently
+        if True:
             try:
                 run_rest_large_files(my_device_runtime, bucket_name)
                 # If it gives:
