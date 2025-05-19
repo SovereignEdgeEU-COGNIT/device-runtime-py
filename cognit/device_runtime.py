@@ -7,6 +7,8 @@ from cognit.modules._call_queue import CallQueue
 from cognit.modules._logger import CognitLogger
 from threading import Thread
 from typing import Callable
+import signal
+import sys
 
 DEFAULT_CONFIG_PATH = "cognit/config/cognit_v2.yml"
 
@@ -38,6 +40,13 @@ class DeviceRuntime:
         Args:
             init_reqs (dict): requirements to be considered when offloading functions
         """
+
+        def signal_handler(sig, frame):
+            self.stop()
+            sys.exit(0)
+
+        # Handle unexpected app shutdowns
+        signal.signal(signal.SIGINT, signal_handler)
 
         # Check if sm is already running
         if self.sm_thread != None:
