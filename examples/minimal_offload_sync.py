@@ -133,6 +133,9 @@ try:
     print("Multiply sync result: " + str(result))
     print("----------------------------------------------------")
 
+    # Stop device runtime
+    my_device_runtime.stop()
+
 except Exception as e:
     print("An exception has occured: " + str(e))
     exit(-1)
