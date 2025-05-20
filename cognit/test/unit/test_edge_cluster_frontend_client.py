@@ -77,7 +77,8 @@ def test_execute_function_if_async(
         app_req_id=app_req_id, 
         exec_mode=ExecutionMode.ASYNC, 
         callback=dummy_callback, 
-        params_tuple=[2, 3]
+        params_tuple=[2, 3],
+        timeout=None
     )
 
     # Assertions
@@ -124,7 +125,8 @@ def test_execute_function_if_sync(
         app_req_id=app_req_id, 
         exec_mode=ExecutionMode.SYNC, 
         callback=callback_executed, 
-        params_tuple=[2, 3]
+        params_tuple=[2, 3],
+        timeout=None
     )
 
     # Assertions
