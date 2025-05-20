@@ -225,7 +225,7 @@ def run_minio_example():
         
         result = my_device_runtime.call(download_data_to_memory, bucket_name, minio_path)
         data = result.res
-        data = None
+        #data = None
         if data is not None:
             print("Data retrieved: " + str(data))
             # text = data.decode('utf-8')        # for text files
@@ -261,10 +261,16 @@ def run_minio_example():
         print("Cleaning all buckets and objects...")
         result = my_device_runtime.call(recursive_cleanup)
         print("Cleanup result: " + str(result.res))
+
+        # Stop device runtime
+        my_device_runtime.stop()
         return 0
 
     except Exception as e:
         print("An exception has occured: " + str(e))
+
+        # Stop device runtime
+        my_device_runtime.stop()
         return -1
 
 
@@ -274,7 +280,6 @@ def run_cleanup():
     result = my_device_runtime.call(recursive_cleanup)
     # print("Status code: " + str(return_code))
     print("Cleanup result: " + str(result.res))
-    
 
 if __name__ == "__main__":
     run_minio_example()
