@@ -168,6 +168,7 @@ class DeviceRuntimeStateMachine(StateMachine):
             # Launch latency calculator
             self.latency_calculator = LatencyCalculator(self.ecf)
             self.lc_thread = threading.Thread(target=self.latency_calculator.run)
+            self.lc_thread.daemon = True
             self.lc_thread.start()
 
         # Reset attemps counter
