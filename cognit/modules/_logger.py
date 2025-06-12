@@ -2,32 +2,64 @@ import inspect
 import logging
 import os
 
+LOGGER_NAME = "cognit-logger"
 
 class CognitLogger:
-    LOGGER_NAME = "cognit-logger"
 
     def __init__(self, verbose=True):
-        self.logger = logging.getLogger(self.LOGGER_NAME)
+        
+        logging.basicConfig(level=logging.DEBUG)
+        self.logger = logging.getLogger(LOGGER_NAME)
+        self.logger.propagate = False
         self.verbose = verbose
-        if not self.logger.hasHandlers():
-            self.logger.propagate = False
-            self.logger.setLevel(logging.WARNING)
-            formatter = logging.Formatter("[%(asctime)5s] [%(levelname)-s] %(message)s")
-            handler = logging.StreamHandler()
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
 
+        if not self.logger.hasHandlers():
+
+            # Add stream handler
+            stream_handler = self.get_stream_handler()
+            self.logger.addHandler(stream_handler)
+
+            # Add file handler
+            file_handler = self.get_file_handler()
+            self.logger.addHandler(file_handler)
+
+    def get_stream_handler(self):
+
+        # Set level
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.DEBUG)
+        
+        # Set log format
+        formatter = logging.Formatter("[%(asctime)5s] [%(levelname)-s] %(message)s")
+        stream_handler.setFormatter(formatter)
+            
+        return stream_handler
+
+    def get_file_handler(self):
+
+        # Set level
+        file_handler = logging.FileHandler('/var/log/cognit.log')
+        file_handler.setLevel(logging.DEBUG)
+
+        # Set log format
+        formatter = logging.Formatter("[%(asctime)5s] [%(levelname)-s] %(message)s")
+        file_handler.setFormatter(formatter)
+
+        return file_handler
+    
+    def set_level(self, level: int):
+        self.logger.setLevel(level)
+    
     def _log(self, level: int, message):
+
         if self.verbose:
+
             frame = inspect.stack()[2]
             filename = os.path.basename(frame.filename)
             line = frame.lineno
             self.logger.log(level, f"[{filename}::{line}] {message}")
         else:
             self.logger.log(level, message)
-
-    def set_level(self, level: int):
-        self.logger.setLevel(level)
 
     def debug(self, message):
         self._log(logging.DEBUG, message)
