@@ -28,6 +28,7 @@ class EdgeClusterFrontendClient:
         if token == None:
             self.logger.error("Token is Null")
             self.set_has_connection(False)
+            
         if address == None:
             self.logger.error("Address is not given")
             self.set_has_connection(False)
