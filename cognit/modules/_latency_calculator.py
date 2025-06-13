@@ -1,86 +1,84 @@
-
-from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._logger import CognitLogger
 from subprocess import Popen, PIPE, STDOUT
 import shlex  
-import time
-
+import json
 import sys
 
 sys.path.append(".")
 
 class LatencyCalculator:
 
-    def __init__(self, ecf: EdgeClusterFrontendClient, interval: int = 2):
+    def __init__(self):
 
         self.logger = CognitLogger()
-        self.running = True
-        self.interval = interval
-        self.host = ecf.address.split("//")[1]
-        self.ecf = ecf
 
     def get_simple_cmd_output(self, cmd, stderr=STDOUT) -> str:
         """
         Execute a simple external command and get its output.
+
+        :param cmd: Command to execute.
+        :param stderr: Where to redirect stderr, default is STDOUT.
+        :return: Output of the command as a string.
+        :raises: OSError if the command fails to execute.
         """
+
         args = shlex.split(cmd)
         return Popen(args, stdout=PIPE, stderr=stderr).communicate()[0].decode()
+    
+    def get_latency_for_clusters(self, edge_clusters: list) -> str:
+        """
+        Gets the address who has the lowest latency to the given edge clusters.
 
-    def calculate(self) -> float:
+        :param edge_clusters: List of edge clusters to check latency against.
+        :return: JSON string with the latency of each edge cluster.
         """
-        Calculate the latency of the host.
+
+        latency_by_cluster = {}
+
+        for cluster_ip in edge_clusters:
+
+                # Latency of cluster_ip
+                latency = self.calculate(cluster_ip)
+
+                if latency < 0:
+                    self.logger.error(f"Failed to calculate latency for {cluster_ip}")
+                    continue
+
+                latency_by_cluster[cluster_ip] = latency
+
+        # Return lowest latency cluster as JSON string
+        if not latency_by_cluster:
+            self.logger.error("No valid edge clusters found.")
+            return json.dumps({"error": "No valid edge clusters found."})
+        
+        self.logger.info("Calculated latency for edge clusters:", latency_by_cluster)
+        return json.dumps(latency_by_cluster)
+
+    def calculate(self, ip: str) -> float:
         """
-        # Extracting time=XXXms from the last line
+        Calculate the latency of the given ip.
+
+        :param ip: IP address to calculate latency for.
+        :return: Latency in milliseconds, or -1.0 if parsing fails.
+        """
+
         latency_line = None
+
         try:
-            cmd = f"ping -c 1 {self.host}"
+
+            cmd = f"ping -c 1 {ip}"
             output = self.get_simple_cmd_output(cmd)
             latency_line = output.strip().split("\n")[1]
             latency = float(latency_line.split("time=")[-1].split()[0])
+            self.logger.info(f"Latency for {ip}: {latency} ms")
+
         except (IndexError, ValueError):
+
             if latency_line:
                 self.logger.error("Failed to parse latency from:", latency_line)
             else:
-                pass
-                # self.logger.error(f"Failed to parse latency from host: {self.host}")
+                self.logger.error(f"Failed to parse latency from host: {self.host}")
             return -1.0  # Return -1.0 if parsing fails
 
         return latency
     
-    def run(self):
-        """
-        Run the latency calculator.
-
-        :param interval: The interval in seconds to calculate the latency.
-        """
-
-        while self.running:
-
-            # Calculate the latency
-            latency = self.calculate()
-
-            if (latency == -1.0):
-                # self.logger.error("Failed to calculate latency")
-                continue
-            else:
-                self.logger.info(f"Latency: {latency} ms")
-                is_sent = self.ecf.send_metrics(latency)
-
-            if (is_sent):
-                self.logger.info("Latency sent")
-            else:
-                self.logger.error("Failed to send the latency")
-
-            time.sleep(self.interval)
-
-    def stop(self):
-        """
-        Stop the latency calculator.
-        """
-        self.running = False
-
-    def set_interval(self, interval: int):
-        """
-        Set the interval in seconds to calculate the latency.
-        """
-        self.interval = interval
