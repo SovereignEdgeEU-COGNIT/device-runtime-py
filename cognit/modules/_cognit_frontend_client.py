@@ -1,4 +1,5 @@
 from cognit.models._cognit_frontend_client import Scheduling, UploadFunctionDaaS, FunctionLanguage, EdgeClusterFrontendResponse
+from cognit.modules._latency_calculator import LatencyCalculator
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
@@ -33,6 +34,7 @@ class CognitFrontendClient:
         """
 
         self.endpoint = self.config.cognit_frontend_engine_endpoint
+        self.latency_calculator = LatencyCalculator()
         self.is_max_latency_activated = False
         self.logger = CognitLogger()
         self._has_connection = False
@@ -45,20 +47,20 @@ class CognitFrontendClient:
         self.offloaded_funs_hash_map = {}
         self.available_ecfs = []
     
-    def init(self, initial_reqs: Scheduling) -> bool:
+    def init(self, reqs: Scheduling) -> bool:
         """
         Authenticates using loaded credentials to get a JWT token
-        Upload initial app requirements to the Cognit FE
+        and creates or updates the application requirements in the Cognit Frontend Engine.
 
         Args:
-            initial_reqs: 'Scheduling' object containing the requirements of the app
+            reqs: 'Scheduling' object containing the requirements of the app
 
         Returns:
             True if response.status_code is the expected (200)
             False otherwise
         """
 
-        if not isinstance(initial_reqs, Scheduling):
+        if not isinstance(reqs, Scheduling):
             self.logger.error("Reqs must be of type Scheduling")
             return False
         
@@ -67,21 +69,30 @@ class CognitFrontendClient:
             self.set_has_connection(False)
             return False
         
-        if initial_reqs.GEOLOCATION is None:
+        if reqs.GEOLOCATION is None:
             self.logger.error("GEOLOCATION is required to initialize Cognit")
             return False
         
-        if initial_reqs.MAX_LATENCY is not None:
+        if reqs.MAX_LATENCY is not None:
+            self.logger.debug("Max latency is activated, setting is_max_latency_activated to True")
             self.is_max_latency_activated = True
         else:
+            self.logger.debug("Max latency is not activated, setting is_max_latency_activated to False")
             self.is_max_latency_activated = False
-        
-        
-        uri = f'{self.endpoint}/v1/app_requirements'
-        header = self.get_header(self.token)
 
+        header = self.get_header(self.token)
+        
         try:
-            response = req.post(uri, headers=header, data=initial_reqs.json(exclude_unset=True))
+
+            if self.app_req_id is not None:
+                uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
+                self.logger.debug(f"Application requirements already exist, updating them at {uri}")
+                response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
+            else:
+                uri = f'{self.endpoint}/v1/app_requirements'
+                self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
+                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))
+    
             self.app_req_id = response.json()
 
         except Exception as e:
@@ -97,8 +108,8 @@ class CognitFrontendClient:
             
         self.set_has_connection(response.status_code < 400)
         return response.status_code == 200  
-    
-    def _get_edge_cluster_address(self) -> list[str]:
+
+    def get_edge_cluster_frontends_available(self) -> list[str]:
         """
         Interacts with the Cognit Frontend Engine to get a list of valid Edge Cluster Frontend Engine addresses
         available for the current application requirements.
@@ -126,6 +137,7 @@ class CognitFrontendClient:
             return None
         
         try:
+            
             data = response.json()
             parsed_data = pydantic.parse_obj_as(EdgeClusterFrontendResponse, data[0])
             self.available_ecfs = parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND']
@@ -142,6 +154,49 @@ class CognitFrontendClient:
             self.logger.error(f"Error in get_ECFE response handling: {e}")
             return []
     
+    def _get_edge_cluster_address(self) -> str:
+        """
+        Gets the address of the Edge Cluster Frontend Engine with the lowest latency.
+        
+        If max latency is not activated, it returns the first Edge Cluster Frontend Engine available.
+        
+        Returns:
+            The address of the Edge Cluster Frontend Engine with the lowest latency, or the first one if max latency is not activated.
+            Returns None if no Edge Cluster Frontend Engines are available.
+        """
+
+        self.available_ecfs = self.get_edge_cluster_frontends_available()
+
+        if not self.available_ecfs:
+            self.logger.error("No Edge Cluster Frontend Engines available")
+            return None
+        
+        if self.is_max_latency_activated:
+
+            self.logger.debug("Max latency is activated, calculating latency for Edge Cluster Frontend Engines")
+            # Calculate latency for each Edge Cluster Frontend Engine
+            cluster_latencies = self.latency_calculator.get_latency_for_clusters(self.available_ecfs)
+
+            if not cluster_latencies:
+                self.logger.error("No valid latencies found for Edge Cluster Frontend Engines")
+                return None
+
+            # Send latencies to Cognit Frontend Engine
+            self.logger.debug("Sending latencies to Cognit Frontend Engine")
+            # TODO: Implement sending latencies to Cognit Frontend Engine
+            
+            self.logger.debug(f"Latencies for Edge Cluster Frontend Engines: {cluster_latencies}")
+
+            # Get the Edge Cluster Frontend Engine with the lowest latency
+            lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
+            self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
+            return lowest_latency_ecfe
+        else:
+
+            self.logger.debug("Max latency is not activated, returning first Edge Cluster Frontend Engine")
+            # Return the first Edge Cluster Frontend Engine
+            return self.available_ecfs[0] if self.available_ecfs else None
+        
     def _authenticate(self) -> str:
         """
         Authenticate against Cognit FE to get a valid JWT Token
@@ -178,34 +233,6 @@ class CognitFrontendClient:
             self.logger.critical("Token creation failed")
             self.set_has_connection(False)
             return None
-    
-    def _app_req_update(self, new_reqs:Scheduling) -> bool:
-        """
-        Update the application requirements using the application ID.
-        Args: 
-            new_reqs: The new requirements to update
-        Returns:
-            True: The request was succesfull (status code == 200)
-            False: Otherwise 
-        """
-        if not isinstance(new_reqs, Scheduling):
-            self.logger.error("Reqs must be of type Scheduling")
-            return False
-        
-        if not self._check_geolocation_valid(new_reqs):
-            self.logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
-            return False
-        
-        uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
-        headers = {"token": self.token}
-        response = req.put(uri, headers=headers, data=new_reqs.json(exclude_unset=True))
-        if response.status_code >= 300:
-            self.logger.warning(f"App req update returned {response.status_code}")
-            self._inspect_response(response, "_app_req_update.warning")
-        
-        self.set_has_connection(response.status_code < 400)
-        
-        return response.status_code == 200 
         
     def _app_req_read(self) -> Scheduling | None:
         """
@@ -264,6 +291,9 @@ class CognitFrontendClient:
 
         Args:
             func: Function to be serialized and uploaded
+
+        Returns:
+            The ID of the function in the Daas Gateway if successful, None otherwise
         """
 
         # Serialize function
