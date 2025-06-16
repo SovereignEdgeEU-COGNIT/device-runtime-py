@@ -183,7 +183,12 @@ class CognitFrontendClient:
 
             # Send latencies to Cognit Frontend Engine
             self.logger.debug("Sending latencies to Cognit Frontend Engine")
-            # TODO: Implement sending latencies to Cognit Frontend Engine
+            are_sent = self._send_latency_measurements(cluster_latencies)
+
+            if not are_sent:
+                self.logger.error("Latencies could not be sent to Cognit Frontend Engine")
+                return None
+            self.logger.debug("Latencies sent successfully to Cognit Frontend Engine")
             
             self.logger.debug(f"Latencies for Edge Cluster Frontend Engines: {cluster_latencies}")
 
@@ -284,7 +289,6 @@ class CognitFrontendClient:
         self.set_has_connection(response.status_code < 400)
         return response.status_code == 204
     
-    
     def upload_function_to_daas(self, function: Callable) -> int:
         """
         Serializes the function and uploads it to the Daas Gateway
@@ -349,6 +353,33 @@ class CognitFrontendClient:
         # Get function ID
         function_id = response.json()
         return function_id
+    
+    def _send_latency_measurements(self, latencies: str) -> bool:
+        """
+        Sends the latencies to the Cognit Frontend Engine
+        
+        Args:
+            latencies: String containing the latencies in JSON format
+        Returns:
+            True if the request was successful, False otherwise
+        """
+    
+        uri = f'{self.endpoint}/v1/latency'
+        header = self.get_header(self.token)
+
+        try:
+
+            response = req.post(uri, headers=header, json=json.loads(latencies))
+
+            if response.status_code != 200:
+                self._inspect_response(response, "_send_latency_measurements.error")
+                return False
+            
+            return True
+        
+        except req.exceptions.RequestException as e:
+            self.logger.error(f"Error in sending latencies: {e}")
+            return False
     
     def _inspect_response(self, response: req.Response, requestFun: str = ""):
         """
