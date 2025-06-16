@@ -33,6 +33,7 @@ class CognitFrontendClient:
             config: CognitConfig object containing a valid Cognit user and pwd
         """
 
+        self.config = config
         self.endpoint = self.config.cognit_frontend_engine_endpoint
         self.latency_calculator = LatencyCalculator()
         self.is_max_latency_activated = False
@@ -40,7 +41,6 @@ class CognitFrontendClient:
         self._has_connection = False
         self.parser = FaasParser()
         self.app_req_id = None
-        self.config = config
         self.token = None
         
         # Storage
@@ -84,13 +84,13 @@ class CognitFrontendClient:
         
         try:
 
-            if self.app_req_id is not None:
+            if self.app_req_id is None:
                 uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
-                self.logger.debug(f"Application requirements already exist, updating them at {uri}")
+                self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
                 response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
             else:
                 uri = f'{self.endpoint}/v1/app_requirements'
-                self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
+                self.logger.debug(f"Application requirements already exist, updating them at {uri}")
                 response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))
     
             self.app_req_id = response.json()

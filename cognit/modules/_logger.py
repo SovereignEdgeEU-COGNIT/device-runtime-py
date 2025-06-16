@@ -38,7 +38,7 @@ class CognitLogger:
     def get_file_handler(self):
 
         # Set level
-        file_handler = logging.FileHandler('/var/log/cognit.log')
+        file_handler = logging.FileHandler('/home/apuente/device_runtime.log')
         file_handler.setLevel(logging.DEBUG)
 
         # Set log format
