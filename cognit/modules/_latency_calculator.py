@@ -1,7 +1,6 @@
 from cognit.modules._logger import CognitLogger
 from subprocess import Popen, PIPE, STDOUT
 import shlex  
-import json
 import sys
 
 sys.path.append(".")
@@ -25,22 +24,32 @@ class LatencyCalculator:
         args = shlex.split(cmd)
         return Popen(args, stdout=PIPE, stderr=stderr).communicate()[0].decode()
     
-    def get_latency_for_clusters(self, edge_clusters: list) -> str:
+    def get_latency_for_clusters(self, edge_clusters: list) -> dict:
         """
         Gets the address who has the lowest latency to the given edge clusters.
 
         :param edge_clusters: List of edge clusters to check latency against.
-        :return: JSON string with the latency of each edge cluster.
+        :return: JSON with the latency of each edge cluster.
         """
 
         latency_by_cluster = {}
 
         for cluster_ip in edge_clusters:
+                
+                # Extract http:// or https:// from the cluster_ip if present
+                if cluster_ip.startswith("http://"):
+
+                    cluster_ip = cluster_ip[7:]
+
+                elif cluster_ip.startswith("https://"):
+
+                    cluster_ip = cluster_ip[8:]
 
                 # Latency of cluster_ip
                 latency = self.calculate(cluster_ip)
 
                 if latency < 0:
+
                     self.logger.error(f"Failed to calculate latency for {cluster_ip}")
                     continue
 
@@ -48,11 +57,12 @@ class LatencyCalculator:
 
         # Return lowest latency cluster as JSON string
         if not latency_by_cluster:
+
             self.logger.error("No valid edge clusters found.")
-            return json.dumps({"error": "No valid edge clusters found."})
+            return {"error": "No valid edge clusters found."}
         
-        self.logger.info("Calculated latency for edge clusters:", latency_by_cluster)
-        return json.dumps(latency_by_cluster)
+        self.logger.info(f"Latency by cluster: {latency_by_cluster}")
+        return latency_by_cluster
 
     def calculate(self, ip: str) -> float:
         """
@@ -72,13 +82,9 @@ class LatencyCalculator:
             latency = float(latency_line.split("time=")[-1].split()[0])
             self.logger.info(f"Latency for {ip}: {latency} ms")
 
-        except (IndexError, ValueError):
-
-            if latency_line:
-                self.logger.error("Failed to parse latency from:", latency_line)
-            else:
-                self.logger.error(f"Failed to parse latency from host: {self.host}")
-            return -1.0  # Return -1.0 if parsing fails
+        except ValueError as e:
+            self.logger.error(f"Failed to parse latency for {ip}: {e}")
+            return -1.0
 
         return latency
     
