@@ -250,14 +250,6 @@ def test_update_requirements_with_change_in_get_ecf_address_state(
     # Mock ECF methods
     mocker.patch("cognit.modules._edge_cluster_frontend_client.EdgeClusterFrontendClient.get_has_connection", return_value=True)
 
-    # Mock LatencyCalculator
-    mock_latency_calculator_instance = mocker.Mock()
-    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator", return_value=mock_latency_calculator_instance)
-
-    # Mock threading.Thread to avoid starting real thread
-    mock_thread = mocker.Mock()
-    mocker.patch("threading.Thread", return_value=mock_thread)
-
     # Mock the logger
     mock_logger = init_state_machine.logger
     mock_logger.debug = mocker.Mock()

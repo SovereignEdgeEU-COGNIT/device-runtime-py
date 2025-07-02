@@ -36,21 +36,25 @@ class LatencyCalculator:
 
         for cluster_ip in edge_clusters:
                 
-                # Extract http:// or https:// from the cluster_ip if present
+                # Extract http:// or https:// from the cluster_ip if present and remove what is after ip or domain name
                 if cluster_ip.startswith("http://"):
 
-                    cluster_ip = cluster_ip[7:]
+                    ip = cluster_ip[7:].split("/")[0]
 
                 elif cluster_ip.startswith("https://"):
 
-                    cluster_ip = cluster_ip[8:]
+                    ip = cluster_ip[8:].split("/")[0]
+
+                else:
+                    
+                    ip = cluster_ip.split("/")[0]
 
                 # Latency of cluster_ip
-                latency = self.calculate(cluster_ip)
+                latency = self.calculate(ip)
 
                 if latency < 0:
 
-                    self.logger.error(f"Failed to calculate latency for {cluster_ip}")
+                    self.logger.error(f"Failed to calculate latency for {ip}")
                     continue
 
                 latency_by_cluster[cluster_ip] = latency
@@ -61,7 +65,6 @@ class LatencyCalculator:
             self.logger.error("No valid edge clusters found.")
             return {"error": "No valid edge clusters found."}
         
-        self.logger.info(f"Latency by cluster: {latency_by_cluster}")
         return latency_by_cluster
 
     def calculate(self, ip: str) -> float:
@@ -82,7 +85,8 @@ class LatencyCalculator:
             latency = float(latency_line.split("time=")[-1].split()[0])
             self.logger.info(f"Latency for {ip}: {latency} ms")
 
-        except ValueError as e:
+        except Exception as e:
+
             self.logger.error(f"Failed to parse latency for {ip}: {e}")
             return -1.0
 
