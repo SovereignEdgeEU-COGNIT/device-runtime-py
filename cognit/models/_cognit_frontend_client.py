@@ -14,10 +14,10 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
         default=None,
         description="Maximum latency in miliseconds")
     MAX_FUNCTION_EXECUTION_TIME: Optional[float] = Field(
-        default=1.0,
+        default=None,
         description="Max execution time allowed for the function")
     MIN_ENERGY_RENEWABLE_USAGE: Optional[int] = Field(
-        default=80,
+        default=None,
         description="Minimum energy renewable percentage")
     GEOLOCATION: Geolocation = Field(
         default=None,

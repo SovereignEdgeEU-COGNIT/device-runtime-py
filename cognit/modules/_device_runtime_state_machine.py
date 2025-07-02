@@ -154,9 +154,12 @@ class DeviceRuntimeStateMachine(StateMachine):
 
         # Get Edge Cluster Frontend
         if self.new_ecf_address is not None:
+
             self.logger.debug("Using new ECF address: " + str(self.new_ecf_address))
             self.ecc_address = self.new_ecf_address
+            
         else:
+
             self.logger.debug("Getting Edge Cluster address from CFC")
             self.ecc_address = self.cfc._get_edge_cluster_address()
 
@@ -172,6 +175,7 @@ class DeviceRuntimeStateMachine(StateMachine):
     def on_enter_ready(self):
 
         if self.timer is not None:
+
             self.timer = CallbackTimer(600, self.get_new_ecf_address)
             self.timer.start()
 
@@ -192,18 +196,26 @@ class DeviceRuntimeStateMachine(StateMachine):
             
             # Execute function
             if function_id is None:
+
                 self.logger.error("Function could not be uploaded")
                 
             else:
+
                 try:
+
                     if call.mode == "sync":
+
                         # Execute function
                         result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout) 
                         # Add result to the queue
                         self.sync_results_queue.add_sync_result(result)
+
                     else:
+
                         self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout)
+
                 except Exception as e:
+                    
                     self.logger.error("There was a request error. Detailed message: {0}".format(e))
 
     def get_new_ecf_address(self):
