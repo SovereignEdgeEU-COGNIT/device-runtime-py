@@ -128,9 +128,11 @@ class CognitFrontendClient:
         headers = self.get_header(self.token)
 
         try:
+
             response = req.get(uri, headers=headers)
 
         except req.exceptions.RequestException as e:
+
             self.logger.error(f"Error in getting Edge Cluster Frontend Engine addresses: {e}")
             self.set_has_connection(False)
             return None
@@ -138,6 +140,7 @@ class CognitFrontendClient:
         self.set_has_connection(response.status_code < 400)
 
         if response.status_code >= 300:
+
             self.logger.warning(f"App req update returned {response.status_code}")
             self._inspect_response(response, "_app_req_update.warning")
             return None
@@ -145,18 +148,24 @@ class CognitFrontendClient:
         try:
             
             data = response.json()
-            parsed_data = pydantic.parse_obj_as(EdgeClusterFrontendResponse, data[0])
-            self.available_ecfs = parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND']
+            self.available_ecfs = []
 
-            self.logger.debug(f"Available Edge Cluster Frontend Engines: {self.available_ecfs}")
+            for item in data:
 
-            if not isinstance(self.available_ecfs, list):
-                self.logger.error(f"ECFE list is not a list, it is of class: {data.__class__}")
-                return []
+                if not isinstance(item, dict):
+                    self.logger.error(f"Item in response is not a dict: {item}")
+                    return []
+                
+                edge_cluster_fe = item.get('EDGE_CLUSTER_FRONTEND', None)
+
+                self.logger.debug(f"Edge Cluster Frontend Engine: {edge_cluster_fe}")
+                
+                self.available_ecfs.append(edge_cluster_fe, None)
             
             return self.available_ecfs
         
         except Exception as e:
+
             self.logger.error(f"Error in get_ECFE response handling: {e}")
             return []
     
@@ -174,6 +183,7 @@ class CognitFrontendClient:
         self.available_ecfs = self.get_edge_cluster_frontends_available()
 
         if not self.available_ecfs:
+
             self.logger.error("No Edge Cluster Frontend Engines available")
             return None
         
@@ -184,17 +194,21 @@ class CognitFrontendClient:
             cluster_latencies = self.latency_calculator.get_latency_for_clusters(self.available_ecfs)
 
             if not cluster_latencies:
+
                 self.logger.error("No valid latencies found for Edge Cluster Frontend Engines")
                 return None
 
             # Send latencies to Cognit Frontend Engine
-            self.logger.debug("Sending latencies to Cognit Frontend Engine")
-            are_sent = self._send_latency_measurements(cluster_latencies)
 
-            if not are_sent:
-                self.logger.error("Latencies could not be sent to Cognit Frontend Engine")
-                return None
-            self.logger.debug("Latencies sent successfully to Cognit Frontend Engine")
+            # self.logger.debug("Sending latencies to Cognit Frontend Engine")
+            # are_sent = self._send_latency_measurements(cluster_latencies)
+
+            # if not are_sent:
+
+            #     self.logger.error("Latencies could not be sent to Cognit Frontend Engine")
+            #     return None
+            
+            # self.logger.debug("Latencies sent successfully to Cognit Frontend Engine")
             
             self.logger.debug(f"Latencies for Edge Cluster Frontend Engines: {cluster_latencies}")
 
