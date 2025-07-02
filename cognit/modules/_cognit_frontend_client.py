@@ -85,17 +85,23 @@ class CognitFrontendClient:
         try:
 
             if self.app_req_id is None:
-                uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
+
+                uri = f'{self.endpoint}/v1/app_requirements'
+
                 self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
                 response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
+
             else:
-                uri = f'{self.endpoint}/v1/app_requirements'
+
+                uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
+
                 self.logger.debug(f"Application requirements already exist, updating them at {uri}")
                 response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))
     
             self.app_req_id = response.json()
 
         except Exception as e:
+            
             self.logger.error(f"Error in app requirements creation: {e}")
             return False
         

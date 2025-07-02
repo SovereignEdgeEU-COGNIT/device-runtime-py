@@ -10,12 +10,18 @@ BAD_COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2_wrong_user.yml"
 
 REQS_INIT = {
     "FLAVOUR": "EnergyV2",
-    "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
     "FLAVOUR": "EnergyV2",
-    "GEOLOCATION": "IKERLAN BILBAO 48007"
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 BAD_REQS = {
@@ -49,7 +55,7 @@ def sm_handler_bad_config() -> StateMachineHandler:
 
 # INIT -> SEND_INIT_REQUEST -> GET_ECF_ADDRESS -> READY
 
-def test_sm_handler_positive_escenerio(
+def test_sm_handler_positive_escenario(
     sm_handler: StateMachineHandler,
 ):
     
@@ -64,6 +70,27 @@ def test_sm_handler_positive_escenerio(
     assert sm_handler.sm.current_state.id == "ready"
     sm_handler.evaluate_conditions()
     assert sm_handler.sm.current_state.id == "ready"
+
+# INIT -> SEND_INIT_REQUEST -> GET_ECF_ADDRESS -> READY -> READY -> READY -> GET_ECF_ADDRESS
+
+def test_sm_handler_edge_cluster_address_changed(
+    sm_handler: StateMachineHandler,
+):
+    
+    assert sm_handler.sm.current_state.id == "init"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "send_init_request"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "get_ecf_address"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "ready"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "ready"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "ready"
+    sm_handler.sm.new_ecf_address = "http://new-ecf-address.com"
+    sm_handler.evaluate_conditions()
+    assert sm_handler.sm.current_state.id == "get_ecf_address"
 
 # INIT -> INIT
 
