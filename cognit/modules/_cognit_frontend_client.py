@@ -230,8 +230,7 @@ class CognitFrontendClient:
             # Get the Edge Cluster Frontend Engine with the lowest latency
             lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
             self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
-            # TODO: JUST FOR TESTING
-            lowest_latency_ecfe = "https://nature4hivemind.ddns.info"
+            # lowest_latency_ecfe = "https://nature4hivemind.ddns.info"
             return lowest_latency_ecfe
         
         else:
