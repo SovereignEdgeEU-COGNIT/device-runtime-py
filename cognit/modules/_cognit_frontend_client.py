@@ -232,6 +232,7 @@ class CognitFrontendClient:
             lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
             self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
             return lowest_latency_ecfe
+        
         else:
 
             self.logger.debug(f"Max latency is not activated, returning first Edge Cluster Frontend Engine: {self.available_ecfs[0]}")
