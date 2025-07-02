@@ -91,14 +91,13 @@ class CognitFrontendClient:
                 self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
                 response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
 
+                self.app_req_id = response.json()
+
             else:
 
                 uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
-
                 self.logger.debug(f"Application requirements already exist, updating them at {uri}")
-                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))
-    
-            self.app_req_id = response.json()
+                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))   
 
         except Exception as e:
             
@@ -231,6 +230,8 @@ class CognitFrontendClient:
             # Get the Edge Cluster Frontend Engine with the lowest latency
             lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
             self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
+            # TODO: JUST FOR TESTING
+            lowest_latency_ecfe = "https://194.28.122.87/"
             return lowest_latency_ecfe
         
         else:

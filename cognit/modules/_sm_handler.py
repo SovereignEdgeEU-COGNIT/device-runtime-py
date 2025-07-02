@@ -71,10 +71,10 @@ class StateMachineHandler():
             if not self.sm.have_requirements_changed() and not self.sm.is_new_ecf_address_set():
                 self.sm.result_given()
             elif self.sm.is_new_ecf_address_set() and not self.sm.have_requirements_changed():
-                self.sm.ready_new_ecf_address()
+                self.sm.ready_update_ecf_address()
             else:
                 self.sm.ready_update_requirements()
-
+ 
     def handle_init_state(self):
         """
         Handle the init state

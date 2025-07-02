@@ -36,15 +36,24 @@ TEST_CFE_RESPONSES = {
         "status_code": 204,
     },
     "ecf_address": {
-        "status_code": 204,
-        "body": [{"ID": 1, "NAME": "cluster001", "HOSTS": [1,2,3], "DATASTORES": [1,2,3], "VNETS": [1,2,3], "TEMPLATE": {"EDGE_CLUSTER_FRONTEND": ["address1", "address2", "address3", "address4"]}}]
+        "status_code": 200,
+        "body": [
+            {'ID': 113, 'NAME': 'uc1-bcn-edge-cluster', 'HOSTS': [22], 'DATASTORES': [0, 1], 'VNETS': [21], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://saturnocity.com/preprod/cognit-frontend/', 'GEOLOCATION': '41.3874,2.1686', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 117, 'NAME': 'cetic-edge-cluster', 'HOSTS': [24, 26], 'DATASTORES': [0, 1, 2], 'VNETS': [26], 'TEMPLATE': {'GEOLOCATION': '50.8503,4.3517', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 116, 'NAME': 'FrancescoCluster', 'HOSTS': [23], 'DATASTORES': [0, 1, 2], 'VNETS': [19], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://nature4hivemind.ddns.info', 'GEOLOCATION': '41.9028,12.4964', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 0, 'NAME': 'ice', 'HOSTS': [7, 8], 'DATASTORES': [0, 1, 2], 'VNETS': [1, 2, 18], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://194.28.122.87', 'GEOLOCATION': '59.3294,18.0687', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}
+        ]
     },
     "fun_upload": {
         "status_code": 200,
         "body": 4079  # Function ID
     },
     "latency_address": {
-        "result": {"address1": 20, "address2": 10, "address3": 30, "address4": 40}
+        "result": {
+            "https://saturnocity.com/preprod/cognit-frontend/": 10, 
+            "https://nature4hivemind.ddns.info": 20, 
+            "https://194.28.122.87": 30
+        }
     }
 }
 
@@ -206,7 +215,7 @@ def test_get_edge_cluster_address_no_max_latency(cognit_client: CognitFrontendCl
 
     address = cognit_client._get_edge_cluster_address()
 
-    assert address == "address1"
+    assert address == "https://saturnocity.com/preprod/cognit-frontend/"
     assert cognit_client.get_has_connection() is True
 
 def test_get_edge_cluster_address_with_max_latency(cognit_client_max_latency: CognitFrontendClient, mocker: MockerFixture):
@@ -221,7 +230,7 @@ def test_get_edge_cluster_address_with_max_latency(cognit_client_max_latency: Co
 
     address = cognit_client_max_latency._get_edge_cluster_address()
 
-    assert address == "address2"
+    assert address == "https://saturnocity.com/preprod/cognit-frontend/"
     assert cognit_client_max_latency.get_has_connection() is True
 
 def test_upload_function_to_daas(cognit_client: CognitFrontendClient, mocker: MockerFixture, test_func: callable):

@@ -18,9 +18,10 @@ REQS_INIT = {
 
 REQS_NEW = {
     "FLAVOUR": "EnergyV2",
+    "MAX_LATENCY": 45,  # New requirement added
     "GEOLOCATION": {
-        "latitude": 43.05,
-        "longitude": -2.53
+        "latitude": 33.05,
+        "longitude": -55.0
     }
 }
 
@@ -232,7 +233,7 @@ def test_sm_handler_ready_new_requirements(
 def test_sm_handler_get_ecf_address_reconnect(
     sm_handler: StateMachineHandler,
 ):
-
+    
     assert sm_handler.sm.current_state.id == "init"
     sm_handler.evaluate_conditions()
     assert sm_handler.sm.current_state.id == "send_init_request"
@@ -246,7 +247,7 @@ def test_sm_handler_get_ecf_address_reconnect(
 
 # INIT -> SEND_INIT_REQUEST -> GET_ECF_ADDRESS -> READY -> INIT (CFC not connected)
 
-def test_sm_handler_get_ecf_address_reconnect(
+def test_sm_handler_get_cfc_address_reconnect(
     sm_handler: StateMachineHandler,
 ):
     
