@@ -34,10 +34,6 @@ class StateMachineHandler():
         Stop the Device Runtime
         """
 
-        # Stop latency calculator thread
-        if self.sm.latency_calculator is not None:
-            self.sm.latency_calculator.stop()
-
         self.running = False
     
     def run(self, interval=0.05):
