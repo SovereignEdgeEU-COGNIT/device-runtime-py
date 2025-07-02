@@ -49,7 +49,7 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug(f"Execute function with ID {func_id}")
-        uri = f"{self.address}v1/functions/{func_id}/execute"
+        uri = f"{self.address}/v1/functions/{func_id}/execute"
 
         # Header
         header = self.get_header(self.token)
