@@ -49,7 +49,7 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug(f"Execute function with ID {func_id}")
-        uri = f"{self.address}/v1/functions/{func_id}/execute"
+        uri = f"{self.address}v1/functions/{func_id}/execute"
 
         # Header
         header = self.get_header(self.token)
@@ -84,6 +84,7 @@ class EdgeClusterFrontendClient:
 
         except req.exceptions.RequestException as e:
             self.logger.error(f"Error during execution: {e}")
+            self.set_has_connection(False)
             raise e
 
         if exec_mode == ExecutionMode.ASYNC:
@@ -104,7 +105,7 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug("Sending metrics...")
-        uri = self.address + "/v1/device_metrics"
+        uri = self.address + "v1/device_metrics"
         # Header
         header = self.get_header(self.token)
         # JSON payload

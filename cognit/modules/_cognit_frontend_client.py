@@ -149,18 +149,34 @@ class CognitFrontendClient:
             
             data = response.json()
             self.available_ecfs = []
+            self.logger.debug(f"Response from get_ECFE: {data}")
 
             for item in data:
+
+                self.logger.debug(f"Item in response: {item}")
 
                 if not isinstance(item, dict):
                     self.logger.error(f"Item in response is not a dict: {item}")
                     return []
                 
-                edge_cluster_fe = item.get('EDGE_CLUSTER_FRONTEND', None)
+                template = item.get('TEMPLATE', None)
+                name = item.get('NAME', None)
+
+                if template is None:
+
+                    self.logger.warning(f"TEMPLATE not found in item {name}")
+                    continue
+                
+                edge_cluster_fe = template.get('EDGE_CLUSTER_FRONTEND', None)
+
+                if edge_cluster_fe is None:
+
+                    self.logger.warning(f"EDGE_CLUSTER_FRONTEND not found in template of item {name}")
+                    continue
 
                 self.logger.debug(f"Edge Cluster Frontend Engine: {edge_cluster_fe}")
                 
-                self.available_ecfs.append(edge_cluster_fe, None)
+                self.available_ecfs.append(edge_cluster_fe)
             
             return self.available_ecfs
         
@@ -218,7 +234,7 @@ class CognitFrontendClient:
             return lowest_latency_ecfe
         else:
 
-            self.logger.debug("Max latency is not activated, returning first Edge Cluster Frontend Engine")
+            self.logger.debug(f"Max latency is not activated, returning first Edge Cluster Frontend Engine: {self.available_ecfs[0]}")
             # Return the first Edge Cluster Frontend Engine
             return self.available_ecfs[0] if self.available_ecfs else None
         
