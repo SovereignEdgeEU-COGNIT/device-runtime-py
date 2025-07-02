@@ -49,19 +49,28 @@ TEST_CFE_RESPONSES = {
 }
 
 TEST_REQS_INIT = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 TEST_REQS_INIT_MAX_LATENCY = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500",
-      "MAX_LATENCY": 25
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    },
+    "MAX_LATENCY": 25
 }
 
 REQS_NEW = {
     "FLAVOUR": "EnergyV2",
-    "GEOLOCATION": "IKERLAN BILBAO 48007"
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  

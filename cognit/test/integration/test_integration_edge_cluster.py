@@ -11,8 +11,11 @@ import time
 COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 TEST_REQS = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 global callback_executed, response_received

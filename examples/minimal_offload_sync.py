@@ -41,23 +41,33 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "SmartCity_ice_V2",
+    "FLAVOUR": "SmartCity_ice_V2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
-      "FLAVOUR": "SmartCity_ice_V2",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "SmartCity_ice_V2",
+    "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_ML = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "NatureV2",
+    "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+            "latitude": 43.05,
+            "longitude": -2.53
+        }
 }
 
 

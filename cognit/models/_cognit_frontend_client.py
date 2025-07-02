@@ -1,7 +1,10 @@
 from enum import Enum
 from typing import Optional
-
 from pydantic import BaseModel, Field
+
+class Geolocation(BaseModel):
+    latitude: float = Field(..., description="Latitude coordinate")
+    longitude: float = Field(..., description="Longitude coordinate")
 
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     FLAVOUR: str = Field(
@@ -16,9 +19,9 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     MIN_ENERGY_RENEWABLE_USAGE: Optional[int] = Field(
         default=80,
         description="Minimum energy renewable percentage")
-    GEOLOCATION: Optional[str] = Field( # if MAX_LATENCY is defined, GEOLOCATION becomes compulsory 
+    GEOLOCATION: Geolocation = Field(
         default=None,
-        description="Scheduling policy that applies to the requirement") 
+        description="Geolocation info with latitude and longitude.")
     
 class FunctionLanguage(str, Enum):
     PY = "PY"

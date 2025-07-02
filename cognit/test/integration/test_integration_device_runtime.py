@@ -10,16 +10,22 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 3.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "NatureV2",
+    "MAX_FUNCTION_EXECUTION_TIME": 3.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 @pytest.fixture   
