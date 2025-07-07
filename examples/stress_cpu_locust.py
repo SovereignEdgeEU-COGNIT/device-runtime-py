@@ -3,14 +3,21 @@
 Simple Locust load test for Cognit stress_cpu function.
 
 Usage:
+    # Basic run
     locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s
+    
+    # With CSV stats output
+    locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s --csv=stress_test_results
+    
+    # Headless with CSV (no web UI)
+    locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s --csv=stress_test_results --headless
 """
 
 import sys
 import time
 sys.path.append(".")
 
-from locust import User, task
+from locust import User, task, events
 from cognit import device_runtime
 
 
@@ -56,19 +63,62 @@ class CognitStressUser(User):
     @task
     def call_stress_function(self):
         """Call the stress function through Cognit."""
+        start_time = time.time()
+        request_name = "cognit_stress_cpu"
+        
         try:
             # Call stress function with 10 second duration
             result = self.device_runtime.call(stress, 10)
             
+            # Calculate execution time
+            total_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
+            
             if result and hasattr(result, 'result'):
                 print(f"Stress result: {result.result}")
+                # Fire success event for Locust statistics
+                events.request.fire(
+                    request_type="COGNIT",
+                    name=request_name,
+                    response_time=total_time,
+                    response_length=len(str(result.result)),
+                    exception=None,
+                    context={}
+                )
             else:
                 print("No result returned")
+                # Fire failure event
+                events.request.fire(
+                    request_type="COGNIT",
+                    name=request_name,
+                    response_time=total_time,
+                    response_length=0,
+                    exception=Exception("No result returned"),
+                    context={}
+                )
                 
         except Exception as e:
+            # Calculate execution time even for failures
+            total_time = int((time.time() - start_time) * 1000)
             print(f"Error calling stress function: {e}")
+            
+            # Fire failure event for Locust statistics
+            events.request.fire(
+                request_type="COGNIT",
+                name=request_name,
+                response_time=total_time,
+                response_length=0,
+                exception=e,
+                context={}
+            )
 
 
 if __name__ == "__main__":
     print("Simple Locust test for Cognit stress function")
-    print("Run with: locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m") 
+    print("\nUsage examples:")
+    print("Basic run:")
+    print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m")
+    print("\nWith CSV stats output:")
+    print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv=stress_results")
+    print("\nHeadless with CSV (no web UI):")
+    print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv=stress_results --headless")
+    print("\nCSV files will be saved as: stress_results_stats.csv, stress_results_failures.csv, etc.") 
