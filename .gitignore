@@ -14,4 +14,4 @@ dist
 cognit.yml
 locust_venv
 device_runtime.log
-examples/device_runtime.log
+*.yaml
