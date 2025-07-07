@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 """
 Simple Locust load test for Cognit stress_cpu function.
-
-Usage:
-    # Basic run
-    locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s
-    
-    # With CSV stats output
-    locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s --csv=stress_test_results
-    
-    # Headless with CSV (no web UI)
-    locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=30s --csv=stress_test_results --headless
 """
 
 import sys
 import time
+import os
 sys.path.append(".")
 
 from locust import User, task, events
@@ -54,7 +45,7 @@ class CognitStressUser(User):
         }
         
         # Initialize device runtime
-        self.device_runtime = device_runtime.DeviceRuntime("./cognit-template.yml")
+        self.device_runtime = device_runtime.DeviceRuntime("../cognit-template.yml")
         self.device_runtime.init(reqs_init)
         
         # Give it a moment to initialize
@@ -67,8 +58,8 @@ class CognitStressUser(User):
         request_name = "cognit_stress_cpu"
         
         try:
-            # Call stress function with 10 second duration
-            result = self.device_runtime.call(stress, 10)
+            # Call stress function with 2 second duration
+            result = self.device_runtime.call(stress, 2)
             
             # Calculate execution time
             total_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
@@ -113,12 +104,13 @@ class CognitStressUser(User):
 
 
 if __name__ == "__main__":
+    csv_path = "./stress_results_locust/stats"
     print("Simple Locust test for Cognit stress function")
+    print(f"\nResults will be saved in: {script_dir}")
     print("\nUsage examples:")
     print("Basic run:")
     print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m")
-    print("\nWith CSV stats output:")
-    print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv=stress_results")
-    print("\nHeadless with CSV (no web UI):")
-    print("  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv=stress_results --headless")
-    print("\nCSV files will be saved as: stress_results_stats.csv, stress_results_failures.csv, etc.") 
+    print("\nWith CSV stats output (saves in script directory):")
+    print(f"  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv={csv_path}")
+    print("\nHeadless with CSV (no web UI, saves in script directory):")
+    print(f"  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv={csv_path} --headless")

@@ -13,5 +13,5 @@ dist
 .vscode
 cognit.yml
 locust_venv
-device_runtime.log
+*.log
 *.yaml
