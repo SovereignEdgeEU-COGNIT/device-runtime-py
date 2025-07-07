@@ -5,8 +5,9 @@
 
 echo "Starting cardinality experiments..."
 
-# Cardinalities to test
-CARDINALITIES=(1 5 10 15)
+# Configuration
+ONEFLOW_SERVICE_ID="306"        # OneFlow service ID to scale
+CARDINALITIES=(1 5 10 15)       # VM cardinalities to test
 
 # Create results directory if it doesn't exist
 mkdir -p ./stress_results_locust
@@ -18,20 +19,20 @@ for cardinality in "${CARDINALITIES[@]}"; do
     echo "============================================="
     
     # Check current cardinality first
-    current_cardinality=$(oneflow show 306 --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
+    current_cardinality=$(oneflow show $ONEFLOW_SERVICE_ID --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
     echo "Current cardinality: $current_cardinality, Target: $cardinality"
     
     if [[ "$current_cardinality" != "$cardinality" ]]; then
         # Scale OneFlow service to target cardinality
-        echo "Scaling OneFlow service 306 FaaS role to $cardinality VMs..."
-        oneflow scale 306 FaaS $cardinality
+        echo "Scaling OneFlow service $ONEFLOW_SERVICE_ID FaaS role to $cardinality VMs..."
+        oneflow scale $ONEFLOW_SERVICE_ID FaaS $cardinality
         
         # Wait for scaling to complete
         echo "Waiting 30 seconds for scaling to complete..."
         sleep 30
         
         # Verify scaling completed
-        final_cardinality=$(oneflow show 306 --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
+        final_cardinality=$(oneflow show $ONEFLOW_SERVICE_ID --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
         if [[ "$final_cardinality" != "$cardinality" ]]; then
             echo "Warning: Scaling may not be complete. Expected: $cardinality, Current: $final_cardinality"
             echo "Waiting additional 30 seconds..."

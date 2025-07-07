@@ -7,12 +7,17 @@
 
 ## Configuration
 
-### Change VM Cardinalities (line 9)
+### Change OneFlow Service ID
+```bash
+ONEFLOW_SERVICE_ID="306"    # Your OneFlow service ID
+```
+
+### Change VM Cardinalities
 ```bash
 CARDINALITIES=(1 2 4 8 16)  # Test different VM counts
 ```
 
-### Change Locust Parameters (lines 43-47)
+### Change Locust Parameters
 ```bash
 --users=20          # Concurrent users
 --spawn-rate=1      # Users spawned per second  
