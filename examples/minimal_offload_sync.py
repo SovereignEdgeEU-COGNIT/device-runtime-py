@@ -41,6 +41,7 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
+<<<<<<< Updated upstream
     "FLAVOUR": "SmartCity_ice_V2",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -68,6 +69,26 @@ REQS_ML = {
             "latitude": 43.05,
             "longitude": -2.53
         }
+=======
+      "FLAVOUR": "Nature",
+      "GEOLOCATION": "43,2"
+}
+
+REQS_NEW = {
+      "FLAVOUR": "Nature",
+      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+      "MAX_LATENCY": 45,
+      "MIN_ENERGY_RENEWABLE_USAGE": 75,
+      "GEOLOCATION": "43,2" 
+}
+
+REQS_ML = {
+      "FLAVOUR": "Nature",
+      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+      "MAX_LATENCY": 45,
+      "MIN_ENERGY_RENEWABLE_USAGE": 75,
+      "GEOLOCATION": "43,1"
+>>>>>>> Stashed changes
 }
 
 
@@ -125,14 +146,14 @@ try:
 
     # More complex function
     # Offload and execute ml_workload function
-    start_time = time.perf_counter()
-    result = my_device_runtime.call(ml_workload, 10, 5)
-    end_time = time.perf_counter()
+    #start_time = time.perf_counter()
+    #result = my_device_runtime.call(ml_workload, 10, 5)
+    #end_time = time.perf_counter()
 
-    print("--------------------------------------------------------")
-    print("Predicted Y: " + str(result))
-    print(f"Execution time: {(end_time-start_time):.6f} seconds")
-    print("--------------------------------------------------------")
+    #print("--------------------------------------------------------")
+    #print("Predicted Y: " + str(result))
+    #print(f"Execution time: {(end_time-start_time):.6f} seconds")
+    #print("--------------------------------------------------------")
 
     time.sleep(5)
 
