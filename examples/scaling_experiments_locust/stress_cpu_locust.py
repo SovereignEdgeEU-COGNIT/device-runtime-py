@@ -31,8 +31,6 @@ def stress(duration: int):
 class CognitStressUser(User):
     """Simple Locust User for testing Cognit stress function."""
     
-    wait_time = lambda self: 2  # Wait 2 seconds between tasks
-    
     def on_start(self):
         """Initialize the Cognit device runtime when user starts."""
         # Simple requirements
@@ -48,9 +46,6 @@ class CognitStressUser(User):
         self.device_runtime = device_runtime.DeviceRuntime("../cognit-template.yml")
         self.device_runtime.init(reqs_init)
         
-        # Give it a moment to initialize
-        time.sleep(1)
-
     @task
     def call_stress_function(self):
         """Call the stress function through Cognit."""
@@ -61,42 +56,43 @@ class CognitStressUser(User):
             # Call stress function with 2 second duration
             result = self.device_runtime.call(stress, 2)
             
-            # Calculate execution time
-            total_time = int((time.time() - start_time) * 1000)  # Convert to milliseconds
+            # Calculate execution time (in seconds)
+            total_time = (time.time() - start_time)
             
-            if result and hasattr(result, 'result'):
-                print(f"Stress result: {result.result}")
+            if result and hasattr(result, 'res') and result.res is not None:
+                print(f"✓ Stress result: {result.res}")
                 # Fire success event for Locust statistics
                 events.request.fire(
                     request_type="COGNIT",
                     name=request_name,
-                    response_time=total_time,
-                    response_length=len(str(result.result)),
+                    response_time=int(total_time * 1000),  
+                    response_length=len(str(result.res)),
                     exception=None,
                     context={}
                 )
             else:
-                print("No result returned")
+                error_msg = f"No result returned. ret_code: {getattr(result, 'ret_code', 'unknown')}, err: {getattr(result, 'err', 'unknown')}"
+                print(f"✗ {error_msg}")
                 # Fire failure event
                 events.request.fire(
                     request_type="COGNIT",
                     name=request_name,
-                    response_time=total_time,
+                    response_time=int(total_time * 1000), 
                     response_length=0,
-                    exception=Exception("No result returned"),
+                    exception=Exception(error_msg),
                     context={}
                 )
                 
         except Exception as e:
-            # Calculate execution time even for failures
-            total_time = int((time.time() - start_time) * 1000)
-            print(f"Error calling stress function: {e}")
+            # Calculate execution time even for failures (in seconds)
+            total_time = (time.time() - start_time)
+            print(f"✗ Error calling stress function: {e}")
             
             # Fire failure event for Locust statistics
             events.request.fire(
                 request_type="COGNIT",
                 name=request_name,
-                response_time=total_time,
+                response_time=int(total_time * 1000), 
                 response_length=0,
                 exception=e,
                 context={}

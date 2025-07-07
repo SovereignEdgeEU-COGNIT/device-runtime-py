@@ -61,28 +61,54 @@ done
 echo "All tests completed!"
 echo "============================================="
 
-# Combine results into a single CSV with cardinality column
+# =============================================================================
+# COMBINE RESULTS: Merge all individual CSV files into one master file
+# =============================================================================
+# This section creates a single CSV file containing results from all cardinality tests.
+# Each row will be tagged with its corresponding VM cardinality for easy analysis.
+
 echo "Combining results into final CSV..."
 
+# Define the path for the master CSV file that will contain all results
 OUTPUT_FILE="./stress_results_locust/combined_results.csv"
 
-# Create header
-echo "cardinality,type,name,request_count,failure_count,median_response_time,average_response_time,min_response_time,max_response_time,average_content_size,requests_per_second,failures_per_second,50_percentile,66_percentile,75_percentile,80_percentile,90_percentile,95_percentile,98_percentile,99_percentile,99.9_percentile,99.99_percentile,100_percentile" > "$OUTPUT_FILE"
+# Create the header row for the master CSV file
+# Note: We add "cardinality" as the first column to identify which VM count each row represents
+# The rest of the columns match Locust's standard CSV output format
+echo "cardinality,Type,Name,Request Count,Failure Count,Median Response Time,Average Response Time,Min Response Time,Max Response Time,Average Content Size,Requests/s,Failures/s,50%,66%,75%,80%,90%,95%,98%,99%,99.9%,99.99%,100%" > "$OUTPUT_FILE"
 
-# Combine data from each cardinality
+# Loop through each cardinality that was tested (1, 5, 10, 15)
 for cardinality in "${CARDINALITIES[@]}"; do
+    # Construct the filename for this cardinality's stats file
+    # Example: "./stress_results_locust/stats_cardinality_5_stats.csv"
     STATS_FILE="./stress_results_locust/stats_cardinality_${cardinality}_stats.csv"
     
+    # Check if the stats file exists before trying to process it
     if [[ -f "$STATS_FILE" ]]; then
-        # Skip header line and add cardinality column
+        echo "Processing cardinality $cardinality..."
+        
+        # Process each line of the individual CSV file:
+        # 1. `tail -n +2` = Skip the first line (header row) of the individual CSV
+        # 2. `while IFS= read -r line` = Read each remaining line one by one
+        # 3. `IFS=` prevents word splitting on spaces/tabs, preserving the line exactly
+        # 4. `-r` prevents backslash interpretation, keeping the line as-is
         tail -n +2 "$STATS_FILE" | while IFS= read -r line; do
+            # Add the cardinality number as the first column, followed by the original line
+            # Example: "5,COGNIT,cognit_stress_cpu,240,0,2100,2064.65,2034,2159,16.83,4.07,0.0,..."
             echo "${cardinality},${line}" >> "$OUTPUT_FILE"
         done
-        echo "Added data for cardinality $cardinality"
+        
+        echo "✓ Added data for cardinality $cardinality"
     else
-        echo "Warning: Stats file not found for cardinality $cardinality"
+        # Warn if the expected file doesn't exist (indicates test might have failed)
+        echo "⚠️  Warning: Stats file not found for cardinality $cardinality"
+        echo "    Expected file: $STATS_FILE"
     fi
 done
+
+echo ""
+echo "📁 Master CSV created: $OUTPUT_FILE"
+echo "   This file contains all results with cardinality tags for easy analysis."
 
 echo "============================================="
 echo "Results combined into: $OUTPUT_FILE"
@@ -97,8 +123,8 @@ for cardinality in "${CARDINALITIES[@]}"; do
     STATS_FILE="./stress_results_locust/stats_cardinality_${cardinality}_stats.csv"
     if [[ -f "$STATS_FILE" ]]; then
         # Extract average response time and requests per second for Aggregated row
-        avg_time=$(tail -n 1 "$STATS_FILE" | cut -d',' -f8)
-        req_per_sec=$(tail -n 1 "$STATS_FILE" | cut -d',' -f12)
+        avg_time=$(tail -n 1 "$STATS_FILE" | cut -d',' -f6)   # Average Response Time
+        req_per_sec=$(tail -n 1 "$STATS_FILE" | cut -d',' -f10) # Requests/s
         printf "%11s | %17s | %11s\n" "$cardinality" "$avg_time" "$req_per_sec"
     fi
 done
