@@ -1,6 +1,17 @@
 # FaaS Scaling Experiment
 
 ## Quick Start
+
+Activate the virtual env:
+```bash
+
+1. cd /var/lib/one/COGNIT/cognit-client-locust/
+
+2. source locust_venv/bin/active
+
+```
+
+then CD into `/var/lib/one/COGNIT/cognit-client-locust/examples/scaling_experiments_locust`
 ```bash
 ./run_cardinality_tests.sh
 ```
