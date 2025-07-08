@@ -42,6 +42,8 @@ else
     echo "✅ Elasticity policies detected - ready for auto-scaling test"
 fi
 
+declare -A FINAL_VMS_PER_SCENARIO
+
 # Reset to baseline (1 VM) before starting
 echo "Resetting service to baseline (1 VM)..."
 oneflow scale $ONEFLOW_SERVICE_ID FaaS 1
@@ -76,14 +78,20 @@ for users in "${USER_SCENARIOS[@]}"; do
     # Check final VM count after test
     final_vms=$(oneflow show $ONEFLOW_SERVICE_ID --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
     echo "Final VMs: $final_vms - auto-scaled from $current_vms"
+    FINAL_VMS_PER_SCENARIO[$users]=$final_vms
     
     echo "Test completed for $users users"
     
     # Brief pause between tests to allow system to stabilize
     echo "Waiting for cleanup and stabilization..."
     
-    # Kill any lingering locust processes and wait for system to stabilize
+    # Kill any lingering locust processes (just in case)
     pkill -f "locust.*stress_cpu_locust.py" 2>/dev/null || true
+    
+    # Reset to baseline for the next test
+    echo "Resetting service to baseline (1 VM)..."
+    oneflow scale $ONEFLOW_SERVICE_ID FaaS 1
+    echo "Waiting 30 seconds for baseline reset..."
     sleep 30
 done
 
@@ -99,8 +107,8 @@ echo "Combining results into final CSV..."
 
 OUTPUT_FILE="./stress_results_autoscaling/combined_autoscaling_results.csv"
 
-# Create header with "users" instead of "cardinality"
-echo "users,Type,Name,Request Count,Failure Count,Median Response Time,Average Response Time,Min Response Time,Max Response Time,Average Content Size,Requests/s,Failures/s,50%,66%,75%,80%,90%,95%,98%,99%,99.9%,99.99%,100%" > "$OUTPUT_FILE"
+# Create header with "users" and "final_vms"
+echo "users,final_vms,Type,Name,Request Count,Failure Count,Median Response Time,Average Response Time,Min Response Time,Max Response Time,Average Content Size,Requests/s,Failures/s,50%,66%,75%,80%,90%,95%,98%,99%,99.9%,99.99%,100%" > "$OUTPUT_FILE"
 
 # Process each user scenario
 for users in "${USER_SCENARIOS[@]}"; do
@@ -108,10 +116,11 @@ for users in "${USER_SCENARIOS[@]}"; do
     
     if [[ -f "$STATS_FILE" ]]; then
         echo "Processing $users users scenario..."
+        vms=${FINAL_VMS_PER_SCENARIO[$users]:-"N/A"}
         
-        # Add user count as first column
+        # Add user count and final_vms as first columns
         tail -n +2 "$STATS_FILE" | while IFS= read -r line; do
-            echo "${users},${line}" >> "$OUTPUT_FILE"
+            echo "${users},${vms},${line}" >> "$OUTPUT_FILE"
         done
         
         echo "✓ Added data for $users users"
@@ -137,9 +146,10 @@ for users in "${USER_SCENARIOS[@]}"; do
         # Extract metrics
         avg_time=$(tail -n 1 "$STATS_FILE" | cut -d',' -f6)
         req_per_sec=$(tail -n 1 "$STATS_FILE" | cut -d',' -f10)
+        vms=${FINAL_VMS_PER_SCENARIO[$users]:-"N/A"}
         
         # Note: VM count would need to be tracked during test for accurate reporting
-        printf "%5s | %17s | %12s | Auto-scaled\n" "$users" "$avg_time" "$req_per_sec"
+        printf "%5s | %17s | %12s | %8s\n" "$users" "$avg_time" "$req_per_sec" "$vms"
     fi
 done
 
