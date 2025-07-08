@@ -13,7 +13,7 @@ echo "This script will test different USER LOADS and let auto-scaling handle VM 
 
 # Configuration
 ONEFLOW_SERVICE_ID="306"        # OneFlow service ID with elasticity policies
-USER_SCENARIOS=("5" "15" "25")  # Different user loads to test
+USER_SCENARIOS=("1" "5")  # Different user loads to test
 
 # Longer test duration to allow scaling events
 TEST_DURATION="3m"              # 3 minutes to see scaling in action

@@ -10,6 +10,29 @@ or
 ./run_autoscaling_tests.sh
 ```
 
+In the case of `run_autoscaling_tests.sh`, remember to adapt the timeout of the `stress` function to the evaluation period of your scaling policy. In the case of autoscaling tests, the scaling policy used is the following one:
+```
+"cooldown": 10,
+"elasticity_policies": [
+    {
+        "expression": "CPU > 70",
+        "type": "CHANGE",
+        "adjust": 2,
+        "period_number": 1,
+        "period": 10,
+    },
+    {
+        "expression": "CPU < 30",
+        "type": "CHANGE",
+        "adjust": -1,
+        "period_number": 1,
+        "period": 10,
+    }
+]
+```
+
+with a stress timeout of 30 seconds (line of the file cognit-client-locust/examples/scaling_experiments_locust/stress_cpu_locust.py)
+
 
 ## Configuration
 
