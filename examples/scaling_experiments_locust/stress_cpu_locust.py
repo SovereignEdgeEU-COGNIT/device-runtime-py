@@ -62,7 +62,8 @@ class CognitStressUser(User):
         request_name = "cognit_stress_cpu"
         
         try:
-            # Call stress function with 2 second duration
+            # Call stress function passing an integer as duration in seconds
+            # Consider to change this based on the evaluation period of the scaling policy
             result = self.device_runtime.call(stress, 2)
             
             # Calculate execution time (in seconds)

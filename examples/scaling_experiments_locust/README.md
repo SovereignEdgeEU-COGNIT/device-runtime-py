@@ -5,6 +5,12 @@
 ./run_cardinality_tests.sh
 ```
 
+or
+```bash
+./run_autoscaling_tests.sh
+```
+
+
 ## Configuration
 
 ### Change OneFlow Service ID

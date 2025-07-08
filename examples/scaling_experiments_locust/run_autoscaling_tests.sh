@@ -13,7 +13,7 @@ echo "This script will test different USER LOADS and let auto-scaling handle VM 
 
 # Configuration
 ONEFLOW_SERVICE_ID="306"        # OneFlow service ID with elasticity policies
-USER_SCENARIOS=("5" "15" "25" "40" "60")  # Different user loads to test
+USER_SCENARIOS=("5" "15" "25")  # Different user loads to test
 
 # Longer test duration to allow scaling events
 TEST_DURATION="3m"              # 3 minutes to see scaling in action
@@ -70,7 +70,8 @@ for users in "${USER_SCENARIOS[@]}"; do
            --run-time=$TEST_DURATION \
            --csv=./stress_results_autoscaling/autoscale_${users}users \
            --headless \
-           --skip-log-setup
+           --skip-log-setup \
+           --loglevel ERROR
     
     # Check final VM count after test
     final_vms=$(oneflow show $ONEFLOW_SERVICE_ID --json 2>/dev/null | jq -r '.DOCUMENT.TEMPLATE.BODY.roles[] | select(.name=="FaaS") | .cardinality' 2>/dev/null || echo "unknown")
@@ -81,10 +82,8 @@ for users in "${USER_SCENARIOS[@]}"; do
     # Brief pause between tests to allow system to stabilize
     echo "Waiting for cleanup and stabilization..."
     
-    # Kill any lingering locust processes (just in case)
+    # Kill any lingering locust processes and wait for system to stabilize
     pkill -f "locust.*stress_cpu_locust.py" 2>/dev/null || true
-    
-    # Wait for system to stabilize
     sleep 30
 done
 
@@ -144,6 +143,9 @@ for users in "${USER_SCENARIOS[@]}"; do
     fi
 done
 
+echo ""
+echo "---"
+echo "Generated files:"
 for users in "${USER_SCENARIOS[@]}"; do
     echo "- autoscale_${users}users_stats.csv"
     echo "- autoscale_${users}users_failures.csv"
