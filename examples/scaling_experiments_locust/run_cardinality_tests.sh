@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# =============================================================================
+# MANUAL CARDINALITY SCALING TESTS
+# =============================================================================
+# This script tests FIXED VM cardinalities by manually setting the number of VMs
+# and measuring performance with a consistent load. This gives you baseline
+# performance data for different infrastructure sizes.
+# =============================================================================
+
 # Simple script to run Locust tests for different cardinalities
 # and combine results into a single CSV file
 

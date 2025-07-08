@@ -46,6 +46,15 @@ class CognitStressUser(User):
         self.device_runtime = device_runtime.DeviceRuntime("../cognit-template.yml")
         self.device_runtime.init(reqs_init)
         
+    def on_stop(self):
+        """Clean up the Cognit device runtime when user stops."""
+        try:
+            if hasattr(self, 'device_runtime') and self.device_runtime:
+                self.device_runtime.stop()
+                print("✓ Device runtime stopped and cleaned up")
+        except Exception as e:
+            print(f"⚠️ Warning: Error stopping device runtime: {e}")
+        
     @task
     def call_stress_function(self):
         """Call the stress function through Cognit."""
@@ -109,4 +118,4 @@ if __name__ == "__main__":
     print("\nWith CSV stats output (saves in script directory):")
     print(f"  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv={csv_path}")
     print("\nHeadless with CSV (no web UI, saves in script directory):")
-    print(f"  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --csv={csv_path} --headless")
+    print(f"  locust -f stress_cpu_locust.py --host=localhost --users=5 --spawn-rate=1 --run-time=1m --headless --csv={csv_path}")
