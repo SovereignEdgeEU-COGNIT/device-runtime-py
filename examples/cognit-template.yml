@@ -1,2 +1,3 @@
-api_endpoint: "http://localhost:1338"
-credentials: "oneadmin:b53d9d48a80cf04e"
+# api_endpoint: "http://localhost:1338"
+api_endpoint: "https://cognit-lab-frontend.sovereignedge.eu" # no port needed
+credentials: "****:****"

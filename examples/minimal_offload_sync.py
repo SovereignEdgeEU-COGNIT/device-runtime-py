@@ -41,7 +41,6 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-<<<<<<< Updated upstream
     "FLAVOUR": "SmartCity_ice_V2",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -69,83 +68,7 @@ REQS_ML = {
             "latitude": 43.05,
             "longitude": -2.53
         }
-=======
-      "FLAVOUR": "Nature",
-      "GEOLOCATION": "43,2"
-}
 
-REQS_NEW = {
-      "FLAVOUR": "Nature",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "43,2" 
-}
-
-REQS_ML = {
-      "FLAVOUR": "Nature",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "43,1"
->>>>>>> Stashed changes
-}
-
-
-def get_result(result):
-    print("*************************************************")
-    print("Sync result: " + str(result))
-    print("*************************************************")
-    return result
-
-try:
-
-    # Instantiate a device Device Runtime
-    my_device_runtime = device_runtime.DeviceRuntime("./examples/cognit-template.yml")
-    my_device_runtime.init(REQS_INIT)
-
-    # Synchronous offload and execution of a function
-    result = my_device_runtime.call(suma, 17, 5)
-
-    print("-----------------------------------------------")
-    print("Sum sync result: " + str(result))
-    print("-----------------------------------------------")
-
-    # Update the requirements
-    are_updated = my_device_runtime.update_requirements(REQS_NEW)
-
-    if (are_updated):
-        print("Requirements: "+ str(REQS_NEW) + " UPDATED!")
-    else:   
-        print("Requirements: "+ str(REQS_NEW) + "NOT UPDATED!")
-
-    # Offload asyncronously a function
-    my_device_runtime.call_async(suma, get_result, 100, 10)
-
-    # Offload and execute a function
-    result = my_device_runtime.call(mult, 2, 3)
-
-    print("-----------------------------------------------")
-    print("Multiply sync result: " + str(result))
-    print("-----------------------------------------------")
-
-    # Lets offload a function with wrong parameters
-    result = my_device_runtime.call(mult, "wrong_parameter", "3")
-
-    print("-----------------------------------------------")
-    print("Wrong result: " + str(result))
-    print("-----------------------------------------------")
-
-    # Update the requirements
-    are_updated = my_device_runtime.update_requirements(REQS_ML)
-
-    if (are_updated):
-        print("Requirements: "+ str(REQS_ML) + " UPDATED!")
-    else:   
-        print("Requirements: "+ str(REQS_ML) + "NOT UPDATED!")
-
-    # More complex function
-    # Offload and execute ml_workload function
     #start_time = time.perf_counter()
     #result = my_device_runtime.call(ml_workload, 10, 5)
     #end_time = time.perf_counter()
@@ -154,6 +77,7 @@ try:
     #print("Predicted Y: " + str(result))
     #print(f"Execution time: {(end_time-start_time):.6f} seconds")
     #print("--------------------------------------------------------")
+
 
     time.sleep(5)
 
