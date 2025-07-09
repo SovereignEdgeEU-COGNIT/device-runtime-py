@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences
+COGNIT,cognit_stress_cpu,Exception('No result returned'),2

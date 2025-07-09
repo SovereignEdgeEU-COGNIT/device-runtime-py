@@ -12,3 +12,6 @@ dist
 .coverage
 .vscode
 cognit.yml
+locust_venv
+*.log
+*.yaml
