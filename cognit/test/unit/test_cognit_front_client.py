@@ -30,29 +30,56 @@ TEST_CFE_RESPONSES = {
     },
     "req_update": {
         "status_code": 200,
-        "body": None
+        "body": 3333
     },
     "req_delete": {
         "status_code": 204,
     },
     "ecf_address": {
-        "status_code": 204,
-        "body": [{"ID": 1, "NAME": "cluster001", "HOSTS": [1,2,3], "DATASTORES": [1,2,3], "VNETS": [1,2,3], "TEMPLATE": {"EDGE_CLUSTER_FRONTEND": "ecf_address"}}]
+        "status_code": 200,
+        "body": [
+            {'ID': 113, 'NAME': 'uc1-bcn-edge-cluster', 'HOSTS': [22], 'DATASTORES': [0, 1], 'VNETS': [21], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://saturnocity.com/preprod/cognit-frontend/', 'GEOLOCATION': '41.3874,2.1686', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 117, 'NAME': 'cetic-edge-cluster', 'HOSTS': [24, 26], 'DATASTORES': [0, 1, 2], 'VNETS': [26], 'TEMPLATE': {'GEOLOCATION': '50.8503,4.3517', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 116, 'NAME': 'FrancescoCluster', 'HOSTS': [23], 'DATASTORES': [0, 1, 2], 'VNETS': [19], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://nature4hivemind.ddns.info', 'GEOLOCATION': '41.9028,12.4964', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}, 
+            {'ID': 0, 'NAME': 'ice', 'HOSTS': [7, 8], 'DATASTORES': [0, 1, 2], 'VNETS': [1, 2, 18], 'TEMPLATE': {'EDGE_CLUSTER_FRONTEND': 'https://194.28.122.87', 'GEOLOCATION': '59.3294,18.0687', 'RESERVED_CPU': None, 'RESERVED_MEM': None}}
+        ]
     },
     "fun_upload": {
         "status_code": 200,
         "body": 4079  # Function ID
+    },
+    "latency_address": {
+        "result": {
+            "https://saturnocity.com/preprod/cognit-frontend/": 10, 
+            "https://nature4hivemind.ddns.info": 20, 
+            "https://194.28.122.87": 30
+        }
     }
 }
 
 TEST_REQS_INIT = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
+}
+
+TEST_REQS_INIT_MAX_LATENCY = {
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    },
+    "MAX_LATENCY": 25
 }
 
 REQS_NEW = {
     "FLAVOUR": "EnergyV2",
-    "GEOLOCATION": "IKERLAN BILBAO 48007"
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  
@@ -71,7 +98,7 @@ def test_func() -> callable:
 
 @pytest.fixture
 def cognit_config() -> CognitConfig:
-    return CognitConfig(COGNIT_CONFIG_PATH)
+    return CognitConfig()
 
 @pytest.fixture
 def bad_cognit_config() -> CognitConfig:
@@ -97,6 +124,29 @@ def cognit_client(cognit_config: CognitConfig, mocker: MockerFixture) -> CognitF
     mocker.patch("requests.post", return_value=mock_response)
 
     cfc.init(Scheduling(**TEST_REQS_INIT))
+
+    return cfc
+
+@pytest.fixture
+def cognit_client_max_latency(cognit_config: CognitConfig, mocker: MockerFixture) -> CognitFrontendClient:
+
+    cfc = CognitFrontendClient(cognit_config)
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["authenticate"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["authenticate"]["body"]
+
+    mocker.patch("requests.post", return_value=mock_response)
+
+    cfc._authenticate()
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["req_init_upload"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["req_init_upload"]["body"]
+
+    mocker.patch("requests.post", return_value=mock_response)
+
+    cfc.init(Scheduling(**TEST_REQS_INIT_MAX_LATENCY))
 
     return cfc
 
@@ -152,9 +202,10 @@ def test_init_cfc(cognit_config: CognitConfig, mocker: MockerFixture):
 
     assert cfc.get_has_connection() is True
     assert has_initialized is True
+    assert cfc.is_max_latency_activated is False
     assert cfc.app_req_id is 4123
 
-def test_get_edge_cluster_address(cognit_client: CognitFrontendClient, mocker: MockerFixture):
+def test_get_edge_cluster_address_no_max_latency(cognit_client: CognitFrontendClient, mocker: MockerFixture):
 
     mock_response = mocker.Mock()
     mock_response.status_code = TEST_CFE_RESPONSES["ecf_address"]["status_code"]
@@ -164,8 +215,23 @@ def test_get_edge_cluster_address(cognit_client: CognitFrontendClient, mocker: M
 
     address = cognit_client._get_edge_cluster_address()
 
-    assert address == "ecf_address"
+    assert address == "https://saturnocity.com/preprod/cognit-frontend/"
     assert cognit_client.get_has_connection() is True
+
+def test_get_edge_cluster_address_with_max_latency(cognit_client_max_latency: CognitFrontendClient, mocker: MockerFixture):
+
+    mock_response = mocker.Mock()
+    mock_response.status_code = TEST_CFE_RESPONSES["ecf_address"]["status_code"]
+    mock_response.json.return_value = TEST_CFE_RESPONSES["ecf_address"]["body"]
+
+    mocker.patch("requests.get", return_value=mock_response)
+
+    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator.get_latency_for_clusters", return_value=TEST_CFE_RESPONSES["latency_address"]["result"])
+
+    address = cognit_client_max_latency._get_edge_cluster_address()
+
+    assert address == "https://saturnocity.com/preprod/cognit-frontend/"
+    assert cognit_client_max_latency.get_has_connection() is True
 
 def test_upload_function_to_daas(cognit_client: CognitFrontendClient, mocker: MockerFixture, test_func: callable):
 
@@ -191,7 +257,7 @@ def test_app_req_update(cognit_client: CognitFrontendClient, mocker: MockerFixtu
 
     mocker.patch("requests.put", return_value=mock_response)
 
-    is_updated = cognit_client._app_req_update(Scheduling(**REQS_NEW))
+    is_updated = cognit_client.init(Scheduling(**REQS_NEW))
 
     assert is_updated is True
     assert cognit_client.get_has_connection() is True

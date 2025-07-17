@@ -1,4 +1,5 @@
 from cognit.models._cognit_frontend_client import Scheduling, UploadFunctionDaaS, FunctionLanguage, EdgeClusterFrontendResponse
+from cognit.modules._latency_calculator import LatencyCalculator
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
@@ -9,7 +10,9 @@ import pydantic
 import hashlib
 import json
 
-
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+                         
 def filter_empty_values(data):
     if isinstance(data, dict):
         return {key: filter_empty_values(value) for key,\
@@ -29,10 +32,13 @@ class CognitFrontendClient:
         Initializes token to None (it is updated when the user calls init())
         
         Args:
-            config: CognitConfig object containing a valid Cognit user and psd
+            config: CognitConfig object containing a valid Cognit user and pwd
         """
+
         self.config = config
         self.endpoint = self.config.cognit_frontend_engine_endpoint
+        self.latency_calculator = LatencyCalculator()
+        self.is_max_latency_activated = False
         self.logger = CognitLogger()
         self._has_connection = False
         self.parser = FaasParser()
@@ -40,44 +46,68 @@ class CognitFrontendClient:
         self.token = None
         
         # Storage
-        self.offloaded_funs_hash_map = {}  # This is a dictionary that will store the hash of the function and the cognit_fc_id
-        self.ec_fe_list = [] # TODO: List containing the endpoints of the Edge Cluster Frontend Engines
+        self.offloaded_funs_hash_map = {}
+        self.available_ecfs = []
     
-    def init(self, initial_reqs: Scheduling) -> bool:
+    def init(self, reqs: Scheduling) -> bool:
         """
         Authenticates using loaded credentials to get a JWT token
-        Upload initial app requirements to the Cognit FE
+        and creates or updates the application requirements in the Cognit Frontend Engine.
+
         Args:
-            initial_reqs: 'Scheduling' object containing the requirements of the app
+            reqs: 'Scheduling' object containing the requirements of the app
+
         Returns:
             True if response.status_code is the expected (200)
             False otherwise
         """
 
-        if not isinstance(initial_reqs, Scheduling):
+        if not isinstance(reqs, Scheduling):
             self.logger.error("Reqs must be of type Scheduling")
             return False
         
         if self.token is None:
+            self.logger.debug("Token is None, setting connection to False")
             self.set_has_connection(False)
             return False
         
-        if not self._check_geolocation_valid(initial_reqs):
-            self.logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
+        if reqs.GEOLOCATION is None:
+            self.logger.error("GEOLOCATION is required to initialize Cognit")
             return False
         
-        uri = f'{self.endpoint}/v1/app_requirements'
+        if reqs.MAX_LATENCY is not None:
+            self.logger.debug("Max latency is activated, setting is_max_latency_activated to True")
+            self.is_max_latency_activated = True
+        else:
+            self.logger.debug("Max latency is not activated, setting is_max_latency_activated to False")
+            self.is_max_latency_activated = False
+
         header = self.get_header(self.token)
-
-        response = req.post(uri, headers=header, data=initial_reqs.json(exclude_unset=True))
-
+        
         try:
-            self.app_req_id = response.json()
-        except:
+
+            if self.app_req_id is None:
+
+                uri = f'{self.endpoint}/v1/app_requirements'
+
+                self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
+                response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
+
+                self.app_req_id = response.json()
+
+            else:
+
+                uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
+                self.logger.debug(f"Application requirements already exist, updating them at {uri}")
+                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))   
+
+        except Exception as e:
+            
+            self.logger.error(f"Error in app requirements creation: {e}")
             return False
         
         if not self.app_req_id:
-            self.logger.error("Application ID was not assigned. Check for errors")
+            self.logger.error("Application ID could not be retrieved from the response")
             return False
         
         if response.status_code != 200:
@@ -85,43 +115,132 @@ class CognitFrontendClient:
             
         self.set_has_connection(response.status_code < 400)
         return response.status_code == 200  
-    
-    def _get_edge_cluster_address(self) -> str | None: # TODO, doesn't work because of CFEngine (Dann1)
+
+    def get_edge_cluster_frontends_available(self) -> list[str]:
         """
-        Interacts with the Cognit Frontend Engine to get a list of valid 
-        Edge Cluster Frontend Engine addresses. 
-        For now, the most optimal ECFE will be the first element of the list.
+        Interacts with the Cognit Frontend Engine to get a list of valid Edge Cluster Frontend Engine addresses
+        available for the current application requirements.
         
-        Args:
-            None
         Returns:
-            None if the response is not valid (length of the list <= 0)
-            String with the endpoint of the ECFE otherwise
+            List of strings containing the addresses of the Edge Cluster Frontend Engines available
         """
+
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}/ec_fe'
-        headers = {"token": self.token}
-        response = req.get(uri, headers=headers)
+        headers = self.get_header(self.token)
+
+        try:
+
+            response = req.get(uri, headers=headers)
+
+        except req.exceptions.RequestException as e:
+
+            self.logger.error(f"Error in getting Edge Cluster Frontend Engine addresses: {e}")
+            self.set_has_connection(False)
+            return None
+
         self.set_has_connection(response.status_code < 400)
+
         if response.status_code >= 300:
+
             self.logger.warning(f"App req update returned {response.status_code}")
             self._inspect_response(response, "_app_req_update.warning")
             return None
         
         try:
+            
             data = response.json()
-            if not isinstance(data, list):
-                self.logger.error(f"ECFE list is not a list, it is of class: {data.__class__}")
-                return None
-            if len(data) <= 0:
-                self.logger.error("ECFE list is empty")
-                return None
-            parsed_data = pydantic.parse_obj_as(EdgeClusterFrontendResponse, data[0])
-            return parsed_data.TEMPLATE['EDGE_CLUSTER_FRONTEND'] ## TESTBED integration
-            # return "http://0.0.0.0:1339" ## only for testing in local
+            self.available_ecfs = []
+            self.logger.debug(f"Response from get_ECFE: {data}")
+
+            for item in data:
+
+                self.logger.debug(f"Item in response: {item}")
+
+                if not isinstance(item, dict):
+                    self.logger.error(f"Item in response is not a dict: {item}")
+                    return []
+                
+                template = item.get('TEMPLATE', None)
+                name = item.get('NAME', None)
+
+                if template is None:
+
+                    self.logger.warning(f"TEMPLATE not found in item {name}")
+                    continue
+                
+                edge_cluster_fe = template.get('EDGE_CLUSTER_FRONTEND', None)
+
+                if edge_cluster_fe is None:
+
+                    self.logger.warning(f"EDGE_CLUSTER_FRONTEND not found in template of item {name}")
+                    continue
+
+                self.logger.debug(f"Edge Cluster Frontend Engine: {edge_cluster_fe}")
+                
+                self.available_ecfs.append(edge_cluster_fe)
+            
+            return self.available_ecfs
+        
         except Exception as e:
+
             self.logger.error(f"Error in get_ECFE response handling: {e}")
-            return None
+            return []
     
+    def _get_edge_cluster_address(self) -> str:
+        """
+        Gets the address of the Edge Cluster Frontend Engine with the lowest latency.
+        
+        If max latency is not activated, it returns the first Edge Cluster Frontend Engine available.
+        
+        Returns:
+            The address of the Edge Cluster Frontend Engine with the lowest latency, or the first one if max latency is not activated.
+            Returns None if no Edge Cluster Frontend Engines are available.
+        """
+
+        self.available_ecfs = self.get_edge_cluster_frontends_available()
+
+        if not self.available_ecfs:
+
+            self.logger.error("No Edge Cluster Frontend Engines available")
+            return None
+        
+        if self.is_max_latency_activated:
+
+            self.logger.debug("Max latency is activated, calculating latency for Edge Cluster Frontend Engines")
+            # Calculate latency for each Edge Cluster Frontend Engine
+            cluster_latencies = self.latency_calculator.get_latency_for_clusters(self.available_ecfs)
+
+            if not cluster_latencies:
+
+                self.logger.error("No valid latencies found for Edge Cluster Frontend Engines")
+                return None
+
+            # Send latencies to Cognit Frontend Engine
+
+            # self.logger.debug("Sending latencies to Cognit Frontend Engine")
+            # are_sent = self._send_latency_measurements(cluster_latencies)
+
+            # if not are_sent:
+
+            #     self.logger.error("Latencies could not be sent to Cognit Frontend Engine")
+            #     return None
+            
+            # self.logger.debug("Latencies sent successfully to Cognit Frontend Engine")
+            
+            self.logger.debug(f"Latencies for Edge Cluster Frontend Engines: {cluster_latencies}")
+
+            # Get the Edge Cluster Frontend Engine with the lowest latency
+            lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
+            self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
+            # lowest_latency_ecfe = "https://nature4hivemind.ddns.info"
+            return lowest_latency_ecfe
+        
+        else:
+
+            self.logger.debug(f"Max latency is not activated, returning first Edge Cluster Frontend Engine: {self.available_ecfs[0]}")
+            # Return the first Edge Cluster Frontend Engine
+            return self.available_ecfs[0] if self.available_ecfs else None
+        
     def _authenticate(self) -> str:
         """
         Authenticate against Cognit FE to get a valid JWT Token
@@ -150,41 +269,14 @@ class CognitFrontendClient:
             return None
         
         self.token = response.json()
+
         if self.token:
             self.set_has_connection(True)
             return self.token
         else:
-            self.logger.critical("Token creation failed, token is None")
+            self.logger.critical("Token creation failed")
             self.set_has_connection(False)
             return None
-    
-    def _app_req_update(self, new_reqs:Scheduling) -> bool:
-        """
-        Update the application requirements using the application ID.
-        Args: 
-            new_reqs: The new requirements to update
-        Returns:
-            True: The request was succesfull (status code == 200)
-            False: Otherwise 
-        """
-        if not isinstance(new_reqs, Scheduling):
-            self.logger.error("Reqs must be of type Scheduling")
-            return False
-        
-        if not self._check_geolocation_valid(new_reqs):
-            self.logger.error("Scheduling model error: GEOLOCATION is compulsory if MAX_LATENCY is defined.")
-            return False
-        
-        uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
-        headers = {"token": self.token}
-        response = req.put(uri, headers=headers, data=new_reqs.json(exclude_unset=True))
-        if response.status_code >= 300:
-            self.logger.warning(f"App req update returned {response.status_code}")
-            self._inspect_response(response, "_app_req_update.warning")
-        
-        self.set_has_connection(response.status_code < 400)
-        
-        return response.status_code == 200 
         
     def _app_req_read(self) -> Scheduling | None:
         """
@@ -236,13 +328,15 @@ class CognitFrontendClient:
         self.set_has_connection(response.status_code < 400)
         return response.status_code == 204
     
-    
     def upload_function_to_daas(self, function: Callable) -> int:
         """
         Serializes the function and uploads it to the Daas Gateway
 
         Args:
             func: Function to be serialized and uploaded
+
+        Returns:
+            The ID of the function in the Daas Gateway if successful, None otherwise
         """
 
         # Serialize function
@@ -299,6 +393,33 @@ class CognitFrontendClient:
         function_id = response.json()
         return function_id
     
+    def _send_latency_measurements(self, latencies: str) -> bool:
+        """
+        Sends the latencies to the Cognit Frontend Engine
+        
+        Args:
+            latencies: String containing the latencies in JSON format
+        Returns:
+            True if the request was successful, False otherwise
+        """
+    
+        uri = f'{self.endpoint}/v1/latency'
+        header = self.get_header(self.token)
+
+        try:
+
+            response = req.post(uri, headers=header, json=json.loads(latencies))
+
+            if response.status_code != 200:
+                self._inspect_response(response, "_send_latency_measurements.error")
+                return False
+            
+            return True
+        
+        except req.exceptions.RequestException as e:
+            self.logger.error(f"Error in sending latencies: {e}")
+            return False
+    
     def _inspect_response(self, response: req.Response, requestFun: str = ""):
         """
         Prints response of a request. For debugging purpouses only 
@@ -313,25 +434,6 @@ class CognitFrontendClient:
                 self.logger.error(f"[{requestFun}] Response Body: {response.json()}")
             except json.JSONDecodeError:
                 self.logger.error(f"[{requestFun}] Response Text: {response.text}")
-    
-    
-    def _check_geolocation_valid(self, reqs: Scheduling) -> bool:
-        """
-        Checks if the geolocation is valid for the given requirements
-
-        Args:
-            reqs: Scheduling object containing the requirements of the app
-        """
-        try:
-            if reqs.MAX_LATENCY in [None, 0]:  # If MAX_LATENCY is not defined, no need to check GEOLOCATION
-                return True
-            
-            # If MAX_LATENCY is defined, GEOLOCATION becomes compulsory 
-            return isinstance(reqs.GEOLOCATION, str) and reqs.GEOLOCATION != ""
-            
-        except Exception as e:
-            self.logger.error(f"Error validating data: {e}")
-            return False
         
     def is_function_uploaded(self, func_hash: str) -> bool:
         """

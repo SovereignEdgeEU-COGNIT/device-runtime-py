@@ -42,6 +42,7 @@ class DeviceRuntime:
         """
 
         def signal_handler(sig, frame):
+
             self.stop()
             sys.exit(0)
 
@@ -50,11 +51,13 @@ class DeviceRuntime:
 
         # Check if sm is already running
         if self.sm_thread != None:
+
             self.cognit_logger.error("DeviceRuntime is already running")
             return False
         
         # Check if init_reqs were provided
         if init_reqs == None:
+            
             self.cognit_logger.error("init_reqs not provided")
             return False
         
@@ -63,13 +66,18 @@ class DeviceRuntime:
 
         # State machine initialization
         if self.sm_handler == None:
+
             self.sm_handler = StateMachineHandler(self.cognit_config, self.current_reqs, self.call_queue, self.sync_result_queue)
 
         # Launch SM thread
         try:
+
             self.sm_thread = Thread(target=self.sm_handler.run)
+            self.sm_thread.daemon = True
             self.sm_thread.start()
+
         except Exception as e:
+
             raise Exception(f"DeviceRuntime could not be initialized: {e}")
         
         self.cognit_logger.info("DeviceRuntime initialized")
@@ -84,6 +92,7 @@ class DeviceRuntime:
         """
 
         if self.sm_thread == None:
+
             self.cognit_logger.error("DeviceRuntime is not running")
             return False
 
@@ -105,10 +114,12 @@ class DeviceRuntime:
 
         # Check if new_reqs were provided
         if new_reqs == None:
+
             self.cognit_logger.error("new_reqs not provided")
             return False
         
         if self.sm_thread == None:
+
             self.cognit_logger.error("DeviceRuntime is not running")
             return False
 
@@ -117,14 +128,20 @@ class DeviceRuntime:
 
         # Check new_reqs are different from the current ones
         if self.current_reqs == new_reqs:
+
             self.cognit_logger.error("New requirements are the same as the current ones")
             return False
         
+        self.cognit_logger.info(f"Updating requirements from {self.current_reqs} to {new_reqs}")
+        
         # Update the current requirements
         are_updated = self.sm_handler.change_requirements(new_reqs)
+
         if not are_updated:
+
             self.cognit_logger.error("Requirements could not be updated")
             return False
+        
         self.current_reqs = new_reqs
         return True
 
@@ -143,9 +160,12 @@ class DeviceRuntime:
 
         # Add the call to the queue
         if self.call_queue.add_call(call):
+
             self.cognit_logger.debug("Function added to the queue")
             return True
+        
         else:
+
             self.cognit_logger.error("Function could not be added to the queue")
             return False
         
@@ -163,8 +183,11 @@ class DeviceRuntime:
 
         # Add the call to the queue
         if self.call_queue.add_call(call):
+
             self.cognit_logger.debug("Function added to the queue")
+
         else:
+
             self.cognit_logger.error("Function could not be added to the queue")
             return None
         

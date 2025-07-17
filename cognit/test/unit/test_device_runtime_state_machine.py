@@ -15,16 +15,22 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyV2",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 3.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "NatureV2",
+    "MAX_FUNCTION_EXECUTION_TIME": 3.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 @pytest.fixture   
@@ -69,14 +75,6 @@ def ready_state_machine(mocker) -> DeviceRuntimeStateMachine:
     mocker.patch("cognit.modules._cognit_frontend_client.CognitFrontendClient.get_has_connection", return_value=True)
     mocker.patch("cognit.modules._cognit_frontend_client.CognitFrontendClient.init", return_value=True)
 
-    # Mock LatencyCalculator
-    mock_latency_calculator_instance = mocker.Mock()
-    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator", return_value=mock_latency_calculator_instance)
-
-    # Mock threading.Thread to avoid starting real thread
-    mock_thread = mocker.Mock()
-    mocker.patch("threading.Thread", return_value=mock_thread)
-
     # Init SMHandler
     sm = DeviceRuntimeStateMachine(cognit_config, requirements, call_queue, sync_result_queue)
 
@@ -85,7 +83,6 @@ def ready_state_machine(mocker) -> DeviceRuntimeStateMachine:
     sm.requirements_up()  
     sm.address_obtained() 
     return sm
-
 
 # Checks initial state is init and attributes are correctly initialized
 def test_init_state(init_state_machine: DeviceRuntimeStateMachine):
@@ -125,14 +122,6 @@ def test_send_init_request_to_get_ecf_address(mocker: MockerFixture, init_state_
     mock_ecf_instance.get_has_connection.return_value = True
     mocker.patch("cognit.modules._edge_cluster_frontend_client.EdgeClusterFrontendClient", return_value=mock_ecf_instance)
 
-    # Mock LatencyCalculator
-    mock_latency_calculator_instance = mocker.Mock()
-    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator", return_value=mock_latency_calculator_instance)
-
-    # Mock threading.Thread to avoid starting real thread
-    mock_thread = mocker.Mock()
-    mocker.patch("threading.Thread", return_value=mock_thread)
-
     # Simulate state transition
     init_state_machine.success_auth()
     init_state_machine.requirements_up()
@@ -143,7 +132,6 @@ def test_send_init_request_to_get_ecf_address(mocker: MockerFixture, init_state_
     assert init_state_machine.get_address_counter == 1
     assert isinstance(init_state_machine.ecf, EdgeClusterFrontendClient)
     assert init_state_machine.ecf.address == "http://mocked-address.com"
-    mock_thread.start.assert_called_once()
 
 
 # Check transition to ready from get_ecf_address is correct
@@ -154,18 +142,10 @@ def test_get_ecf_address_to_ready(mocker: MockerFixture, init_state_machine: Dev
     mocker.patch("cognit.modules._cognit_frontend_client.CognitFrontendClient._get_edge_cluster_address", return_value="http://mocked-address.com")
     mocker.patch("cognit.modules._cognit_frontend_client.CognitFrontendClient.get_has_connection", return_value=True)
 
-        # Mock ECF methods and constructor
+    # Mock ECF methods and constructor
     mock_ecf_instance = mocker.Mock()
     mock_ecf_instance.get_has_connection.return_value = True
     mocker.patch("cognit.modules._edge_cluster_frontend_client.EdgeClusterFrontendClient", return_value=mock_ecf_instance)
-
-    # Mock LatencyCalculator
-    mock_latency_calculator_instance = mocker.Mock()
-    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator", return_value=mock_latency_calculator_instance)
-
-    # Mock threading.Thread to avoid starting real thread
-    mock_thread = mocker.Mock()
-    mocker.patch("threading.Thread", return_value=mock_thread)
 
     # Realize necessary transitions to reach to ready
     init_state_machine.success_auth()
@@ -178,7 +158,6 @@ def test_get_ecf_address_to_ready(mocker: MockerFixture, init_state_machine: Dev
     assert init_state_machine.get_address_counter == 0
     assert isinstance(init_state_machine.ecf, EdgeClusterFrontendClient)
     assert init_state_machine.ecf.address == "http://mocked-address.com"
-    mock_thread.start.assert_called_once()
 
 
 def test_execute_function_offloading_sync(mocker: MockerFixture, ready_state_machine: DeviceRuntimeStateMachine):
@@ -271,14 +250,6 @@ def test_update_requirements_with_change_in_get_ecf_address_state(
     # Mock ECF methods
     mocker.patch("cognit.modules._edge_cluster_frontend_client.EdgeClusterFrontendClient.get_has_connection", return_value=True)
 
-    # Mock LatencyCalculator
-    mock_latency_calculator_instance = mocker.Mock()
-    mocker.patch("cognit.modules._latency_calculator.LatencyCalculator", return_value=mock_latency_calculator_instance)
-
-    # Mock threading.Thread to avoid starting real thread
-    mock_thread = mocker.Mock()
-    mocker.patch("threading.Thread", return_value=mock_thread)
-
     # Mock the logger
     mock_logger = init_state_machine.logger
     mock_logger.debug = mocker.Mock()
@@ -330,3 +301,33 @@ def test_update_requirements_token_invalid_in_ready_state(
     assert ready_state_machine.current_state.id == "init"
     assert ready_state_machine.new_requirements == new_requirements
     assert ready_state_machine.requirements_changed is True
+
+def test_address_has_changed_in_ready_state(
+        ready_state_machine: DeviceRuntimeStateMachine, 
+    ):
+
+    ready_state_machine.new_ecf_address = None
+    
+    # Transition to ecf_address state
+    ready_state_machine.result_given()
+
+    # Assertions
+    assert ready_state_machine.current_state.id == "ready"
+    assert ready_state_machine.ecc_address == "http://mocked-address.com"
+    assert ready_state_machine.get_address_counter == 0
+    assert isinstance(ready_state_machine.ecf, EdgeClusterFrontendClient)
+    assert ready_state_machine.ecf.address == "http://mocked-address.com"
+
+    # Change the address
+    ready_state_machine.new_ecf_address = "http://new-mocked-address.com"
+
+    # Transition to ecf_address state
+    ready_state_machine.ready_update_ecf_address()
+
+    # Assertions
+    assert ready_state_machine.current_state.id == "get_ecf_address"
+    assert ready_state_machine.ecc_address == "http://new-mocked-address.com"
+    assert ready_state_machine.get_address_counter == 1
+    assert isinstance(ready_state_machine.ecf, EdgeClusterFrontendClient)
+    assert ready_state_machine.ecf.address == "http://new-mocked-address.com"
+    assert ready_state_machine.new_ecf_address is None

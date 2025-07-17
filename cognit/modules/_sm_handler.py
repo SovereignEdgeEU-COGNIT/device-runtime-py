@@ -34,10 +34,6 @@ class StateMachineHandler():
         Stop the Device Runtime
         """
 
-        # Stop latency calculator thread
-        if self.sm.latency_calculator is not None:
-            self.sm.latency_calculator.stop()
-
         self.running = False
     
     def run(self, interval=0.05):
@@ -72,11 +68,13 @@ class StateMachineHandler():
         elif not self.sm.is_ecf_connected():
             self.sm.token_not_valid_ready_2()
         else:
-            if not self.sm.have_requirements_changed():
+            if not self.sm.have_requirements_changed() and not self.sm.is_new_ecf_address_set():
                 self.sm.result_given()
+            elif self.sm.is_new_ecf_address_set() and not self.sm.have_requirements_changed():
+                self.sm.ready_update_ecf_address()
             else:
                 self.sm.ready_update_requirements()
-
+ 
     def handle_init_state(self):
         """
         Handle the init state

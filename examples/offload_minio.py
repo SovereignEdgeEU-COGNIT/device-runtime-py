@@ -262,15 +262,11 @@ def run_minio_example():
         result = my_device_runtime.call(recursive_cleanup)
         print("Cleanup result: " + str(result.res))
 
-        # Stop device runtime
-        my_device_runtime.stop()
         return 0
 
     except Exception as e:
         print("An exception has occured: " + str(e))
 
-        # Stop device runtime
-        my_device_runtime.stop()
         return -1
 
 

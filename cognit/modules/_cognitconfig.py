@@ -4,7 +4,7 @@ from cognit.modules._logger import CognitLogger
 
 cognit_logger = CognitLogger()
 
-DEFAULT_CONFIG_PATH = "./examples/cognit.yml"
+DEFAULT_CONFIG_PATH = "./examples/cognit-template.yml"
 
 class CognitConfig: 
     ## dann1 code uses JSON, but going to keep YAML and modify conf.yml file

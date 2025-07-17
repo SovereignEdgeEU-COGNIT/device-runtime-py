@@ -7,6 +7,8 @@ import json
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class EdgeClusterFrontendClient:
 
@@ -28,6 +30,7 @@ class EdgeClusterFrontendClient:
         if token == None:
             self.logger.error("Token is Null")
             self.set_has_connection(False)
+            
         if address == None:
             self.logger.error("Address is not given")
             self.set_has_connection(False)
@@ -35,7 +38,7 @@ class EdgeClusterFrontendClient:
         self.token = token
         self.address = address
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int) -> None | ExecResponse:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 120) -> None | ExecResponse:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
@@ -83,6 +86,7 @@ class EdgeClusterFrontendClient:
 
         except req.exceptions.RequestException as e:
             self.logger.error(f"Error during execution: {e}")
+            self.set_has_connection(False)
             raise e
 
         if exec_mode == ExecutionMode.ASYNC:
@@ -103,7 +107,7 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug("Sending metrics...")
-        uri = self.address + "/v1/device_metrics"
+        uri = self.address + "v1/device_metrics"
         # Header
         header = self.get_header(self.token)
         # JSON payload
