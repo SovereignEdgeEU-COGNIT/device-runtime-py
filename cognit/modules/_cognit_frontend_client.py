@@ -10,7 +10,9 @@ import pydantic
 import hashlib
 import json
 
-
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
+                         
 def filter_empty_values(data):
     if isinstance(data, dict):
         return {key: filter_empty_values(value) for key,\

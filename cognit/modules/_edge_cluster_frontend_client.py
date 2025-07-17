@@ -7,6 +7,8 @@ import json
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class EdgeClusterFrontendClient:
 

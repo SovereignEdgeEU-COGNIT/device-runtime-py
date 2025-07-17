@@ -27,7 +27,7 @@ class CognitLogger:
 
         # Set level
         stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.WARNING)
         
         # Set log format
         formatter = logging.Formatter("[%(asctime)5s] [%(levelname)-s] %(message)s")
@@ -38,7 +38,7 @@ class CognitLogger:
     def get_file_handler(self):
 
         # Set level
-        file_handler = logging.FileHandler('/var/log/device_runtime.log')
+        file_handler = logging.FileHandler('/tmp/device_runtime.log')
         file_handler.setLevel(logging.DEBUG)
 
         # Set log format
