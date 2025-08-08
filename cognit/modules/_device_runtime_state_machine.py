@@ -160,8 +160,8 @@ class DeviceRuntimeStateMachine(StateMachine):
         # Get Edge Cluster Frontend 
         self.ecc_address = self.cfc._get_edge_cluster_address()
 
-        # Initialize Edge Cluster client
-        self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address)
+        # Initialize Edge Cluster client with flavour information
+        self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address, self.requirements.FLAVOUR)
 
         if self.latency_calculator is None and self.ecf.get_has_connection():
 

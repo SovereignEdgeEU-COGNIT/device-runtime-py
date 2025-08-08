@@ -10,7 +10,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class EdgeClusterFrontendClient:
 
-    def __init__(self, token: str, address: str):
+    def __init__(self, token: str, address: str, flavour: str = None):
         """
         Initializes EdgeClusterFrontendClient. 
 
@@ -18,6 +18,7 @@ class EdgeClusterFrontendClient:
             token (str): Token for the communication between the client 
             and the Edge Cluster Frontend
             address (str): address of the Edge Cluster Frontend
+            flavour (str): flavour to be included in API paths for routing
         """
         
         self.logger = CognitLogger()
@@ -34,8 +35,9 @@ class EdgeClusterFrontendClient:
 
         self.token = token
         self.address = address
+        self.flavour = flavour
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None | ExecResponse:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 20) -> None | ExecResponse:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
@@ -48,7 +50,15 @@ class EdgeClusterFrontendClient:
 
         # Create request
         self.logger.debug(f"Execute function with ID {func_id}")
-        uri = f"{self.address}/v1/functions/{func_id}/execute"
+        # Include flavour in the path if available
+        if self.flavour:
+            uri = f"{self.address}/{self.flavour}/v1/functions/{func_id}/execute"
+        else:
+            uri = f"{self.address}/v1/functions/{func_id}/execute"
+        
+        self.logger.debug(f"Sending request to URI: {uri}")
+        self.logger.debug(f"Flavour: {self.flavour}")
+        self.logger.debug(f"Address: {self.address}")
 
         # Header
         header = self.get_header(self.token)
