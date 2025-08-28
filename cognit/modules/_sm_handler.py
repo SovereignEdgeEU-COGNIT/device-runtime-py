@@ -34,6 +34,15 @@ class StateMachineHandler():
         Stop the Device Runtime
         """
         self.running = False
+        # Best-effort cleanup of latency thread if it was started
+        try:
+            if getattr(self.sm, "latency_calculator", None) is not None:
+                self.sm.latency_calculator.stop()
+            if getattr(self.sm, "lc_thread", None) is not None:
+                # Avoid blocking indefinitely on shutdown
+                self.sm.lc_thread.join(timeout=5)
+        except Exception as e:
+            self.logger.error(f"Error stopping latency calculator: {e}")
     
     def run(self, interval=0.05):
 

@@ -58,7 +58,7 @@ class DeviceRuntime:
 
         # Launch SM thread
         try:
-            self.sm_thread = Thread(target=self.sm_handler.run)
+            self.sm_thread = Thread(target=self.sm_handler.run, daemon=True)
             self.sm_thread.start()
         except Exception as e:
             raise Exception(f"DeviceRuntime could not be initialized: {e}")
