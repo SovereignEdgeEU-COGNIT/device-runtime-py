@@ -16,7 +16,7 @@ def sum(a: int, b: int):
     return a + b
 
 REQUIREMENTS = {
-      "FLAVOUR": "Nature",
+      "FLAVOUR": "CyberSecurity",
       "MAX_LATENCY": 30,
       "GEOLOCATION": "59.3294,18.0687"
 }
