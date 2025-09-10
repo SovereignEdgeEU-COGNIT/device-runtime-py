@@ -2,15 +2,7 @@ from cognit.models._device_runtime import ExecResponse
 from cognit.modules._logger import CognitLogger
 from threading import Lock, Condition
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-class SyncResultQueue(metaclass=Singleton):
+class SyncResultQueue:
 
     def __init__(self):
         self.result = None
