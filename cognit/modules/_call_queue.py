@@ -2,18 +2,10 @@ from cognit.modules._logger import CognitLogger
 from cognit.models._device_runtime import Call
 from threading import Lock
 
-class Singleton(type):
-    _instances = {}
-
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
 """
 Class to manage the FIFO queue of functions to be executed. 
 """
-class CallQueue(metaclass=Singleton):
+class CallQueue:
 
     def __init__(self, size_limit: int = 50):
         self.queue = []
