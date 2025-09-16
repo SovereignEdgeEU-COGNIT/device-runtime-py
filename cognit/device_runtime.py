@@ -185,6 +185,7 @@ class DeviceRuntime:
         Args:
             function (Callable): The target funtion to be offloaded
             params (List[Any]): Arguments needed to call the function
+            timeout (int, optional): Maximum time to wait for the result. Defaults to None.
 
         Returns:
             ExecResponse: The response of the offloaded function
