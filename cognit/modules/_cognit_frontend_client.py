@@ -188,9 +188,9 @@ class CognitFrontendClient:
     
     def _get_edge_cluster_address(self) -> str:
         """
-        Gets the address of the Edge Cluster Frontend Engine with the lowest latency.
+        Gets the address of the Edge Cluster Frontend Engine with the lowest latency (If max latency is activated).
         
-        If max latency is not activated, it returns the first Edge Cluster Frontend Engine available.
+        If max latency is not activated, it returns the first Edge Cluster Frontend Engine available (the nearest).
         
         Returns:
             The address of the Edge Cluster Frontend Engine with the lowest latency, or the first one if max latency is not activated.
@@ -244,13 +244,11 @@ class CognitFrontendClient:
     def _authenticate(self) -> str:
         """
         Authenticate against Cognit FE to get a valid JWT Token
-        
-        Args:
-            user: Valid username of Cognit
-            password: Password of the username
+
         Returns:
             Token: JSON dict containing the JWT Token
         """
+
         self.logger.debug(f"Requesting token for {self.config._cognit_frontend_engine_usr}")
         uri = f'{self.endpoint}/v1/authenticate'
 
@@ -281,20 +279,17 @@ class CognitFrontendClient:
     def _app_req_read(self) -> Scheduling | None:
         """
         Reads the app requirements using the application ID
-        
-        Args:
-            None
+
         Returns:
             A dictionary containing the requested data of the app requirements
         """
+
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
         headers = {"token": self.token}
         response = req.get(uri, headers=headers)
         
-        # TODO: Check response.status_code < 300, else return None
-        # if response.status_code >= 300:
-        #     return None
         if response.status_code != 200: # something went wrong
+
             self.logger.error(f"Read response code was not expected one with status_code: {response.status_code}")
             self._inspect_response(response, "_app_req_read.error")
             return None
@@ -309,9 +304,8 @@ class CognitFrontendClient:
     
     def _app_req_delete(self) -> bool:
         """
-        Deletes the app requirements 
-        Args:
-            self: As app reqs are stored as class attribute
+        Deletes the app requirements using the application ID
+
         Returns:
             True if response.status_code is the expected (204)
             False otherwise
@@ -376,7 +370,11 @@ class CognitFrontendClient:
         
         Args:
             data: UploadFunctionDaaS object containing the function data
+
+        Returns:
+            The ID of the function in the Daas Gateway if successful, None otherwise
         """
+
         self.logger.debug(f"Uploading function: {data}")
 
         uri = f'{self.endpoint}/v1/daas/upload'
@@ -399,6 +397,7 @@ class CognitFrontendClient:
         
         Args:
             latencies: String containing the latencies in JSON format
+
         Returns:
             True if the request was successful, False otherwise
         """
@@ -441,13 +440,24 @@ class CognitFrontendClient:
 
         Args:
             func_hash: Hash of the function
+
+        Returns:
+            True if the function is already uploaded, False otherwise
         """
+
         return func_hash in self.offloaded_funs_hash_map.keys()
     
     def get_header(self, token: str) -> dict:
         """
         Returns the header for the requests
+
+        Args:
+            token (str): Token for the communication between the client and the Edge Cluster Frontend
+
+        Returns:
+            dict: Dictionary with the header
         """
+        
         return {
             "token": token
         }

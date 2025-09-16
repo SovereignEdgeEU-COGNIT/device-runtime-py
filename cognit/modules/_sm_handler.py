@@ -25,6 +25,9 @@ class StateMachineHandler():
 
         Args:
             new_requirements (Scheduling): New requirements to be considered when offloading functions
+
+        Returns:
+            bool: True if the requirements were updated successfully, False otherwise
         """
 
         return self.sm.change_requirements(new_requirements)

@@ -16,13 +16,20 @@ class SyncResultQueue:
 
         Args:
             result (ExecResponse): Result to be added to the queue
+
+        Returns:
+            bool: True if the result was added successfully, False otherwise
         """
+
         with self.condition:  # Acquire lock for thread safety
+
             if self.result is not None:
                 self.cognit_logger.error("SyncResultsQueue is full. Result will be discarded")
                 return False
+            
             self.result = result
             self.condition.notify()  # Notify any waiting thread that the result is available
+
         return True
 
     def get_sync_result(self) -> ExecResponse:
@@ -32,10 +39,11 @@ class SyncResultQueue:
         Returns:
             ExecResponse: Result from the queue
         """
+
         with self.condition:  # Acquire lock for thread safety
             while self.result is None:
                 # Wait until there is a result available
-                self.condition.wait()  # Efficiently wait for a result
+                self.condition.wait()
             result = self.result
             self.result = None  # Reset the result
         return result
