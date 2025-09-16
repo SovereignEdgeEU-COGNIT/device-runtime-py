@@ -4,9 +4,9 @@
 
 - Release M33.
 
-### Added
+### Additions, changes and fixes
 
-- Latency mechanisms to select the faster Edge Clsuter Frontend if MAX_LATENCY parameter is provided in requirements
+- Latency mechanisms to select the faster Edge Cluster Frontend if MAX_LATENCY parameter is provided in requirements
 - Requirement parameter GEOLOCATION is now mandatory and made up of a latitud and longitude value.
 - Fix: CallQueue and SyncResultQueue are no longer Singletons
 - Examples: MinIO service usage within a offloaded function
