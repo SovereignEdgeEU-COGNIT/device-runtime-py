@@ -12,9 +12,6 @@ import sys
 
 DEFAULT_CONFIG_PATH = "cognit/config/cognit_v2.yml"
 
-"""
-Class to manage the Device Runtime. It is responsible for offloading functions to the Cognit Frontend
-"""
 class DeviceRuntime:
     
     def __init__(self, config_path=DEFAULT_CONFIG_PATH) -> None:
