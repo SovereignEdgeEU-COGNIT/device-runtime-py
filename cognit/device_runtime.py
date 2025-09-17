@@ -12,9 +12,6 @@ import sys
 
 DEFAULT_CONFIG_PATH = "cognit/config/cognit_v2.yml"
 
-"""
-Class to manage the Device Runtime. It is responsible for offloading functions to the Cognit Frontend
-"""
 class DeviceRuntime:
     
     def __init__(self, config_path=DEFAULT_CONFIG_PATH) -> None:
@@ -25,6 +22,7 @@ class DeviceRuntime:
             config_path (str): Path of the configuration to be applied to access
             the Cognit Frontend
         """
+        
         self.cognit_config = CognitConfig(config_path)
         self.sync_result_queue = SyncResultQueue()
         self.cognit_logger = CognitLogger()
@@ -39,6 +37,9 @@ class DeviceRuntime:
 
         Args:
             init_reqs (dict): requirements to be considered when offloading functions
+
+        Returns:
+            bool: True if the SM thread was launched successfully, False otherwise
         """
 
         def signal_handler(sig, frame):
@@ -110,6 +111,9 @@ class DeviceRuntime:
 
         Args:
             new_reqs (dict): new requirements to be considered when offloading functions
+
+        Returns:
+            bool: True if the requirements were updated successfully, False otherwise
         """
 
         # Check if new_reqs were provided
@@ -153,6 +157,9 @@ class DeviceRuntime:
             function (Callable): The target funtion to be offloaded
             callback (Callable): The callback function to be executed after the offloaded function finishes
             params (List[Any]): Arguments needed to call the function
+
+        Returns:
+            bool: True if the function was added to the queue successfully, False otherwise
         """
 
         # Create a Call object
@@ -176,6 +183,10 @@ class DeviceRuntime:
         Args:
             function (Callable): The target funtion to be offloaded
             params (List[Any]): Arguments needed to call the function
+            timeout (int, optional): Maximum time to wait for the result. Defaults to None.
+
+        Returns:
+            ExecResponse: The response of the offloaded function
         """
 
         # Create a Call object

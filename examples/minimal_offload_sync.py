@@ -41,7 +41,7 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-    "FLAVOUR": "CyberSecurity",
+    "FLAVOUR": "SmartCity",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -49,7 +49,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
-    "FLAVOUR": "SmartCity",
+    "FLAVOUR": "Nature",
     "MAX_FUNCTION_EXECUTION_TIME": 15.0,
     "MAX_LATENCY": 45,
     "MIN_ENERGY_RENEWABLE_USAGE": 75,

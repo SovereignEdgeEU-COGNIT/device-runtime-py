@@ -47,6 +47,9 @@ class EdgeClusterFrontendClient:
             app_req_id (int): Identifier of the requirements associated to the function
             exec_mode (ExecutionMode): Selected mode for offloading (SYNC OR ASYNC)
             params (List[Any]): Arguments needed to call the function
+
+        Returns:
+            None | ExecResponse: If the execution mode is ASYNC, the function returns None. If the execution mode is SYNC, the function returns an ExecResponse object.
         """
 
         # Create request
@@ -95,35 +98,6 @@ class EdgeClusterFrontendClient:
             return None
         else:
             return result
-
-    def send_metrics(self, latency: int) -> bool:
-        """
-        Collects current device location and latency and sends it to the Edge Cluster Frontend 
-
-        Args:
-            location (str): Current location of the device
-            latency (int): Current latency of the device
-        """   
-
-        # Create request
-        self.logger.debug("Sending metrics...")
-        uri = self.address + "v1/device_metrics"
-        # Header
-        header = self.get_header(self.token)
-        # JSON payload
-        payload = {"latency": latency} 
-
-        try:
-            response = req.post(uri, headers=header, json=payload)
-        except req.exceptions.SSLError as e:
-            if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-                raise e
-            self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
-            
-            # Send request with verify=False because the uri uses a self-signed certificate
-            response = req.post(uri, headers=header, json=payload, verify=False)
-
-        return response.status_code == 200
     
     def evaluate_response(self, response: ExecResponse): 
         """
@@ -150,6 +124,9 @@ class EdgeClusterFrontendClient:
         Args:
             token (str): Token for the communication between the client 
             and the Edge Cluster Frontend
+
+        Returns:
+            dict: Dictionary with the header
         """
         return {
             "token": token
@@ -162,6 +139,9 @@ class EdgeClusterFrontendClient:
         Args:
             app_req_id (int): Identifier of the requirements associated to the function
             exec_mode (ExecutionMode): Selected mode for offloading (SYNC OR ASYNC)
+
+        Returns:
+            dict: Dictionary with the query parameters
         """
         return {
             "app_req_id": app_req_id,
@@ -174,7 +154,11 @@ class EdgeClusterFrontendClient:
 
         Args:
             params_tuple (tuple): Arguments needed to call the function
+
+        Returns:
+            List[Any]: List of serialized parameters
         """
+
         serialized_params = []
         for param in params_tuple:
             serialized_param = self.parser.serialize(param)
@@ -185,10 +169,12 @@ class EdgeClusterFrontendClient:
         """
         Getter for the connection status
         """
+
         return self._has_connection
     
     def set_has_connection(self, is_connected):
         """
         Setter for the connection status
         """
+
         self._has_connection = is_connected

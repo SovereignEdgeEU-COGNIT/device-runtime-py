@@ -7,7 +7,7 @@ import json # optional
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "FaaS_generic_V2",
+      "FLAVOUR": "SmartCity",
       "MIN_ENERGY_RENEWABLE_USAGE": 70,
       "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
 }

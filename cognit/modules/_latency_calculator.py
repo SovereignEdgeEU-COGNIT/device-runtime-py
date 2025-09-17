@@ -13,12 +13,14 @@ class LatencyCalculator:
 
     def get_simple_cmd_output(self, cmd, stderr=STDOUT) -> str:
         """
-        Execute a simple external command and get its output.
+        Executes a simple command and returns its output as a string.
+        
+        Args:
+            cmd (str): Command to be executed.
+            stderr: Standard error handling (default: STDOUT).
 
-        :param cmd: Command to execute.
-        :param stderr: Where to redirect stderr, default is STDOUT.
-        :return: Output of the command as a string.
-        :raises: OSError if the command fails to execute.
+        Returns:
+            str: Output of the command as a string.
         """
 
         args = shlex.split(cmd)
@@ -26,10 +28,13 @@ class LatencyCalculator:
     
     def get_latency_for_clusters(self, edge_clusters: list) -> dict:
         """
-        Gets the address who has the lowest latency to the given edge clusters.
+        Calculate the latency for a list of edge clusters.
 
-        :param edge_clusters: List of edge clusters to check latency against.
-        :return: JSON with the latency of each edge cluster.
+        Args:
+            edge_clusters (list): List of edge cluster IPs or domain names.
+
+        Returns:
+            dict: Dictionary with the edge cluster as key and its latency in milliseconds as value.
         """
 
         latency_by_cluster = {}
@@ -48,6 +53,10 @@ class LatencyCalculator:
                 else:
                     
                     ip = cluster_ip.split("/")[0]
+
+                # Remove port if present
+                if ":" in ip:
+                    ip = ip.split(":")[0]
 
                 # Latency of cluster_ip
                 latency = self.calculate(ip)
@@ -71,8 +80,11 @@ class LatencyCalculator:
         """
         Calculate the latency of the given ip.
 
-        :param ip: IP address to calculate latency for.
-        :return: Latency in milliseconds, or -1.0 if parsing fails.
+        Args:
+            ip (str): IP or domain name to calculate the latency.
+
+        Returns:
+            float: Latency in milliseconds. If the latency cannot be calculated, returns -1.
         """
 
         latency_line = None

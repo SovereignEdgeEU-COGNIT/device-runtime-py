@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [release-cognit-4.0]
+
+- Release M33.
+
+### Additions, changes and fixes
+
+- Latency mechanisms to select the faster Edge Cluster Frontend if MAX_LATENCY parameter is provided in requirements
+- Requirement parameter GEOLOCATION is now mandatory and made up of a latitud and longitude value.
+- Fix: CallQueue and SyncResultQueue are no longer Singletons
+- Examples: MinIO service usage within a offloaded function
+- Improved documentation
+
 ## [release-cognit-3.0]
 
 - Release M27.

@@ -8,12 +8,22 @@ Class to manage the FIFO queue of functions to be executed.
 class CallQueue:
 
     def __init__(self, size_limit: int = 50):
+
         self.queue = []
         self.mutex = Lock()
         self.size_limit = size_limit
         self.cognit_logger = CognitLogger()
 
     def add_call(self, call: Call) -> bool:
+        """
+        Adds a call to the queue.
+
+        Args:
+            call (Call): Call object to be added to the queue
+
+        Returns:
+            bool: True if the call was added successfully, False otherwise
+        """
 
         # Lock the queue
         self.mutex.acquire()
@@ -32,6 +42,12 @@ class CallQueue:
         return True
 
     def get_call(self) -> Call:
+        """
+        Removes and returns the first call from the queue.
+        
+        Returns:
+            Call: Call object removed from the queue. If the queue is empty, returns None.
+        """
 
         # Lock the queue
         self.mutex.acquire()
@@ -51,4 +67,11 @@ class CallQueue:
         return call
 
     def __len__(self):
+        """
+        Returns the number of calls in the queue.
+
+        Returns:
+            int: Number of calls in the queue
+        """
+        
         return len(self.queue)
