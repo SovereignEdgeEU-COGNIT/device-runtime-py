@@ -22,6 +22,7 @@ class DeviceRuntime:
             config_path (str): Path of the configuration to be applied to access
             the Cognit Frontend
         """
+        
         self.cognit_config = CognitConfig(config_path)
         self.sync_result_queue = SyncResultQueue()
         self.cognit_logger = CognitLogger()

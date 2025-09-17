@@ -1,5 +1,4 @@
 import sys
-import time
 sys.path.append(".")
 
 from cognit import device_runtime

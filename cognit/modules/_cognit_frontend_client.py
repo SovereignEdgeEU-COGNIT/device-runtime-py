@@ -214,25 +214,13 @@ class CognitFrontendClient:
 
                 self.logger.error("No valid latencies found for Edge Cluster Frontend Engines")
                 return None
-
-            # Send latencies to Cognit Frontend Engine
-
-            # self.logger.debug("Sending latencies to Cognit Frontend Engine")
-            # are_sent = self._send_latency_measurements(cluster_latencies)
-
-            # if not are_sent:
-
-            #     self.logger.error("Latencies could not be sent to Cognit Frontend Engine")
-            #     return None
-            
-            # self.logger.debug("Latencies sent successfully to Cognit Frontend Engine")
             
             self.logger.debug(f"Latencies for Edge Cluster Frontend Engines: {cluster_latencies}")
 
             # Get the Edge Cluster Frontend Engine with the lowest latency
             lowest_latency_ecfe = min(cluster_latencies, key=cluster_latencies.get)
             self.logger.debug(f"Edge Cluster Frontend Engine with lowest latency: {lowest_latency_ecfe}")
-            # lowest_latency_ecfe = "https://nature4hivemind.ddns.info"
+
             return lowest_latency_ecfe
         
         else:
@@ -310,6 +298,7 @@ class CognitFrontendClient:
             True if response.status_code is the expected (204)
             False otherwise
         """
+        
         self.logger.debug(f"Deleting application requirements {self.app_req_id}")
 
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
