@@ -10,6 +10,7 @@
 - Requirement parameter GEOLOCATION is now mandatory and made up of a latitud and longitude value.
 - Fix: CallQueue and SyncResultQueue are no longer Singletons
 - Examples: MinIO service usage within a offloaded function
+- Improved documentation
 
 ## [release-cognit-3.0]
 
