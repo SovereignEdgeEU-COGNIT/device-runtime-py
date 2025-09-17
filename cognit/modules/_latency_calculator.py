@@ -54,6 +54,10 @@ class LatencyCalculator:
                     
                     ip = cluster_ip.split("/")[0]
 
+                # Remove port if present
+                if ":" in ip:
+                    ip = ip.split(":")[0]
+
                 # Latency of cluster_ip
                 latency = self.calculate(ip)
 
