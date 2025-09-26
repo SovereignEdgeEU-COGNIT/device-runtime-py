@@ -10,7 +10,7 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-    "FLAVOUR": "EnergyV2",
+    "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -18,7 +18,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
-    "FLAVOUR": "NatureV2",
+    "FLAVOUR": "NatureFR",
     "MAX_FUNCTION_EXECUTION_TIME": 3.0,
     "MAX_LATENCY": 45,
     "MIN_ENERGY_RENEWABLE_USAGE": 75,

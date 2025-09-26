@@ -9,7 +9,7 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 BAD_COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2_wrong_user.yml"
 
 REQS_INIT = {
-    "FLAVOUR": "EnergyV2",
+    "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -17,7 +17,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
-    "FLAVOUR": "EnergyV2",
+    "FLAVOUR": "EnergyTorch",
     "MAX_LATENCY": 45,  # New requirement added
     "GEOLOCATION": {
         "latitude": 33.05,
