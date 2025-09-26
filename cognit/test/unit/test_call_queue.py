@@ -38,9 +38,9 @@ def test_call_queue_empty(call_queue: CallQueue):
 def test_call_queue_multiple_calls(call_queue: CallQueue):
 
     # Add multiple calls to the queue
-    call1 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[2, 2])
-    call2 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[3, 3])    
-    call3 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[4, 4])
+    call1 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[2, 2], timeout=5)
+    call2 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[3, 3], timeout=5)    
+    call3 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[4, 4], timeout=5)
     call_queue.add_call(call1)
     call_queue.add_call(call2)
     call_queue.add_call(call3)
@@ -54,12 +54,12 @@ def test_call_queue_multiple_calls(call_queue: CallQueue):
 def test_call_queue_full(call_queue: CallQueue):
 
     # Add multiple calls to the queue
-    call1 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[2, 2])
-    call2 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[3, 3])
-    call3 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[4, 4])
-    call4 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[5, 5])
-    call5 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[6, 6])
-    call6 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[7, 7])
+    call1 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[2, 2], timeout=5)
+    call2 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[3, 3], timeout=5)
+    call3 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[4, 4], timeout=5)
+    call4 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[5, 5], timeout=5)
+    call5 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[6, 6], timeout=5)
+    call6 = Call(function=sum, fc_lang=FunctionLanguage.PY, callback=dummy_callback, mode=ExecutionMode.SYNC, params=[7, 7], timeout=5)
     
     assert call_queue.add_call(call1) == True
     assert call_queue.add_call(call2) == True

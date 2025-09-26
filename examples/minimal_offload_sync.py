@@ -41,25 +41,34 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "SmartCity_ice_V2",
+    "FLAVOUR": "SmartCity",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
-      "FLAVOUR": "SmartCity_ice_V2",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "Nature",
+    "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_ML = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 15.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyTorch",
+    "MAX_FUNCTION_EXECUTION_TIME": 15.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+            "latitude": 43.05,
+            "longitude": -2.53
+        }
 }
-
 
 def get_result(result):
     print("*************************************************")
@@ -84,8 +93,11 @@ try:
     are_updated = my_device_runtime.update_requirements(REQS_NEW)
 
     if (are_updated):
+
         print("Requirements: "+ str(REQS_NEW) + " UPDATED!")
+
     else:   
+
         print("Requirements: "+ str(REQS_NEW) + "NOT UPDATED!")
 
     # Offload asyncronously a function
@@ -109,8 +121,11 @@ try:
     are_updated = my_device_runtime.update_requirements(REQS_ML)
 
     if (are_updated):
+
         print("Requirements: "+ str(REQS_ML) + " UPDATED!")
+
     else:   
+
         print("Requirements: "+ str(REQS_ML) + "NOT UPDATED!")
 
     # More complex function
@@ -133,6 +148,10 @@ try:
     print("Multiply sync result: " + str(result))
     print("----------------------------------------------------")
 
+    # Stop device runtime
+    my_device_runtime.stop()
+
 except Exception as e:
+    
     print("An exception has occured: " + str(e))
     exit(-1)

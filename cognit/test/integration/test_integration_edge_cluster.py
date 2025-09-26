@@ -11,8 +11,11 @@ import time
 COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 TEST_REQS = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyTorch",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 global callback_executed, response_received
@@ -62,7 +65,7 @@ def test_execute_function_if_async(
     function_id = ready_state_machine.cfc.upload_function_to_daas(test_func)
     app_req_id = ready_state_machine.cfc.get_app_requirements_id()
 
-    response = ready_state_machine.ecf.execute_function(func_id=function_id, app_req_id=app_req_id, exec_mode=ExecutionMode.ASYNC, callback=dummy_callback, params_tuple=[2, 3])
+    response = ready_state_machine.ecf.execute_function(func_id=function_id, app_req_id=app_req_id, exec_mode=ExecutionMode.ASYNC, callback=dummy_callback, params_tuple=[2, 3], timeout=None)
 
     time.sleep(10)
 
@@ -85,7 +88,7 @@ def test_execute_function_if_sync(
     function_id = ready_state_machine.cfc.upload_function_to_daas(test_func)
     app_req_id = ready_state_machine.cfc.get_app_requirements_id()
 
-    response = ready_state_machine.ecf.execute_function(function_id, app_req_id, ExecutionMode.SYNC, None, [2, 3])
+    response = ready_state_machine.ecf.execute_function(function_id, app_req_id, ExecutionMode.SYNC, None, [2, 3], None)
 
     # Assertions
     assert response.res == 6

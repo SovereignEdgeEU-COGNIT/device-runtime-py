@@ -7,6 +7,8 @@ import json
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import logging
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class EdgeClusterFrontendClient:
 
@@ -28,6 +30,7 @@ class EdgeClusterFrontendClient:
         if token == None:
             self.logger.error("Token is Null")
             self.set_has_connection(False)
+            
         if address == None:
             self.logger.error("Address is not given")
             self.set_has_connection(False)
@@ -35,7 +38,7 @@ class EdgeClusterFrontendClient:
         self.token = token
         self.address = address
         
-    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 5) -> None | ExecResponse:
+    def execute_function(self, func_id: str, app_req_id: int, exec_mode: ExecutionMode, callback: callable, params_tuple: tuple, timeout: int = 120) -> None | ExecResponse:
         """
         Triggers the execution of a function described by its id in a certain mode using certain paramters for its execution
 
@@ -44,6 +47,9 @@ class EdgeClusterFrontendClient:
             app_req_id (int): Identifier of the requirements associated to the function
             exec_mode (ExecutionMode): Selected mode for offloading (SYNC OR ASYNC)
             params (List[Any]): Arguments needed to call the function
+
+        Returns:
+            None | ExecResponse: If the execution mode is ASYNC, the function returns None. If the execution mode is SYNC, the function returns an ExecResponse object.
         """
 
         # Create request
@@ -83,7 +89,8 @@ class EdgeClusterFrontendClient:
 
         except req.exceptions.RequestException as e:
             self.logger.error(f"Error during execution: {e}")
-            raise
+            self.set_has_connection(False)
+            raise e
 
         if exec_mode == ExecutionMode.ASYNC:
             # Execute the callback function
@@ -91,35 +98,6 @@ class EdgeClusterFrontendClient:
             return None
         else:
             return result
-
-    def send_metrics(self, latency: int) -> bool:
-        """
-        Collects current device location and latency and sends it to the Edge Cluster Frontend 
-
-        Args:
-            location (str): Current location of the device
-            latency (int): Current latency of the device
-        """   
-
-        # Create request
-        self.logger.debug("Sending metrics...")
-        uri = self.address + "/v1/device_metrics"
-        # Header
-        header = self.get_header(self.token)
-        # JSON payload
-        payload = {"latency": latency} 
-
-        try:
-            response = req.post(uri, headers=header, json=payload)
-        except req.exceptions.SSLError as e:
-            if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-                raise e
-            self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
-            
-            # Send request with verify=False because the uri uses a self-signed certificate
-            response = req.post(uri, headers=header, json=payload, verify=False)
-
-        return response.status_code == 200
     
     def evaluate_response(self, response: ExecResponse): 
         """
@@ -146,6 +124,9 @@ class EdgeClusterFrontendClient:
         Args:
             token (str): Token for the communication between the client 
             and the Edge Cluster Frontend
+
+        Returns:
+            dict: Dictionary with the header
         """
         return {
             "token": token
@@ -158,6 +139,9 @@ class EdgeClusterFrontendClient:
         Args:
             app_req_id (int): Identifier of the requirements associated to the function
             exec_mode (ExecutionMode): Selected mode for offloading (SYNC OR ASYNC)
+
+        Returns:
+            dict: Dictionary with the query parameters
         """
         return {
             "app_req_id": app_req_id,
@@ -170,7 +154,11 @@ class EdgeClusterFrontendClient:
 
         Args:
             params_tuple (tuple): Arguments needed to call the function
+
+        Returns:
+            List[Any]: List of serialized parameters
         """
+
         serialized_params = []
         for param in params_tuple:
             serialized_param = self.parser.serialize(param)
@@ -181,10 +169,12 @@ class EdgeClusterFrontendClient:
         """
         Getter for the connection status
         """
+
         return self._has_connection
     
     def set_has_connection(self, is_connected):
         """
         Setter for the connection status
         """
+
         self._has_connection = is_connected

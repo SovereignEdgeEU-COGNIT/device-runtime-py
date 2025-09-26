@@ -1,13 +1,12 @@
 from cognit.modules._edge_cluster_frontend_client import EdgeClusterFrontendClient
 from cognit.modules._cognit_frontend_client import CognitFrontendClient, Scheduling
-from cognit.modules._latency_calculator import LatencyCalculator
 from cognit.modules._sync_result_queue import SyncResultQueue
+from cognit.modules._callback_timer import CallbackTimer
 from cognit.modules._cognitconfig import CognitConfig
 from cognit.modules._call_queue import CallQueue
 from cognit.modules._logger import CognitLogger
 from cognit.models._device_runtime import Call
 from statemachine import StateMachine, State
-import threading
 
 import sys
 
@@ -60,23 +59,28 @@ class DeviceRuntimeStateMachine(StateMachine):
     # 4. Upload functions
 
     # 4.1 Request another function if the clients are connected
-    result_given = ready.to.itself(cond=["is_cfc_connected", "is_ecf_connected"], unless=["have_requirements_changed"])
+    result_given = ready.to.itself(cond=["is_cfc_connected", "is_ecf_connected"], unless=["have_requirements_changed", "is_new_ecf_address_set"])
     # 4.2 Request new token if the one of the clients lost its connection
     token_not_valid_ready = ready.to(init, unless=["is_cfc_connected"])
     token_not_valid_ready_2 = ready.to(init, unless=["is_ecf_connected"])
     # 4.3 The requirements have changed, therefore, the requirements are uploaded again
     ready_update_requirements = ready.to(send_init_request, cond=["is_cfc_connected", "is_ecf_connected", "have_requirements_changed"])
+    # 4.4 Connect to the Edge Cluster Frontend Client if the address has changed
+    ready_update_ecf_address = ready.to(get_ecf_address, cond=["is_cfc_connected", "is_ecf_connected", "is_new_ecf_address_set"], unless=["have_requirements_changed"])
   
     def __init__(self, config: CognitConfig, requirements: Scheduling, call_queue: CallQueue, sync_result_queue: SyncResultQueue):
+        
         # Clients
         self.cfc = None
         self.ecf = None
+        self.new_ecf_address = None
 
         # Communication parameters
         self.token = None
         self.requirements = requirements
         self.new_requirements = None
         self.config = config
+        self.timer = None
 
         # Counters
         self.up_req_counter = 0
@@ -93,23 +97,18 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.call_queue = call_queue
         self.sync_results_queue = sync_result_queue
 
-        # Latency thread
-        self.latency_calculator = None
-        self.lc_thread = None
         super().__init__()
 
     # Get credentials by instantiating a CognitFrontendClient and authenticates to the Cognit Frontend  
     def on_enter_init(self):
 
+        if self.timer is not None:
+            self.timer.stop()
+            self.timer = None
+
         # Reset counter
         self.up_req_counter = 0
         self.get_address_counter = 0
-
-        if self.latency_calculator is not None:
-            self.latency_calculator.stop()
-            self.latency_calculator = None
-            self.lc_thread.join()
-            self.lc_thread = None
 
         # Instantiate Cognit Frontend Client
         self.cfc = CognitFrontendClient(self.config)
@@ -121,11 +120,9 @@ class DeviceRuntimeStateMachine(StateMachine):
     # Upload processing requirements 
     def on_enter_send_init_request(self):
 
-        if self.latency_calculator is not None:
-            self.latency_calculator.stop()
-            self.latency_calculator = None
-            self.lc_thread.join()
-            self.lc_thread = None
+        if self.timer is not None:
+            self.timer.stop()
+            self.timer = None
             
         # Set token to the CFC client
         self.logger.debug("SM: Setting sm.token to cfc token")
@@ -148,33 +145,39 @@ class DeviceRuntimeStateMachine(StateMachine):
     # Get the edge cluster address 
     def on_enter_get_ecf_address(self):
 
+        if self.timer is not None:
+            self.timer.stop()
+            self.timer = None
+
         # Reset counter
         self.up_req_counter = 0
 
-        if self.latency_calculator is not None:
-            self.latency_calculator.stop()
-            self.latency_calculator = None
-            self.lc_thread.join()
-            self.lc_thread = None
+        # Get Edge Cluster Frontend
+        if self.new_ecf_address is not None:
 
-        # Get Edge Cluster Frontend 
-        self.ecc_address = self.cfc._get_edge_cluster_address()
+            self.logger.debug("Using new ECF address: " + str(self.new_ecf_address))
+            self.ecc_address = self.new_ecf_address
+            
+        else:
+
+            self.logger.debug("Getting Edge Cluster address from CFC")
+            self.ecc_address = self.cfc._get_edge_cluster_address()
 
         # Initialize Edge Cluster client
         self.ecf = EdgeClusterFrontendClient(self.token, self.ecc_address)
 
-        if self.latency_calculator is None and self.ecf.get_has_connection():
-
-            # Launch latency calculator
-            self.latency_calculator = LatencyCalculator(self.ecf)
-            self.lc_thread = threading.Thread(target=self.latency_calculator.run)
-            self.lc_thread.start()
+        self.new_ecf_address = None
 
         # Reset attemps counter
         self.get_address_counter += 1
 
     # State that waits for user functions offloading
     def on_enter_ready(self):
+
+        if self.timer is not None:
+
+            self.timer = CallbackTimer(600, self.get_new_ecf_address)
+            self.timer.start()
 
         # Reset counter
         self.get_address_counter = 0
@@ -193,17 +196,38 @@ class DeviceRuntimeStateMachine(StateMachine):
             
             # Execute function
             if function_id is None:
+
                 self.logger.error("Function could not be uploaded")
                 
             else:
-                if call.mode == "sync":
-                    # Execute function
-                    result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params) 
-                    # Add result to the queue
-                    self.sync_results_queue.add_sync_result(result)
-                else:
-                    self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params)
-                
+
+                try:
+
+                    if call.mode == "sync":
+
+                        # Execute function
+                        result = self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout) 
+                        # Add result to the queue
+                        self.sync_results_queue.add_sync_result(result)
+
+                    else:
+
+                        self.ecf.execute_function(function_id, app_req_id, call.mode, call.callback, call.params, call.timeout)
+
+                except Exception as e:
+                    
+                    self.logger.error("There was a request error. Detailed message: {0}".format(e))
+
+    def get_new_ecf_address(self):
+        """
+        Get the new Edge Cluster Frontend address from the CFC.
+        """
+        self.new_ecf_address = self.cfc._get_edge_cluster_address()
+
+        if self.new_ecf_address == self.ecc_address:
+            self.logger.debug("New ECF address is the same as the current one")
+            self.new_ecf_address = None
+                         
     # Checks if CF client has connection with the CF
     def is_cfc_connected(self):
         self.logger.debug("Cognit Frontend Client connected: " + str(self.cfc.get_has_connection()))
@@ -239,16 +263,27 @@ class DeviceRuntimeStateMachine(StateMachine):
     def have_requirements_changed(self):
         self.logger.debug("Requirements changed: " + str(self.requirements_changed))
         return self.requirements_changed
+    
+    # Check if the new ECF address has been set
+    def is_new_ecf_address_set(self):
+        self.logger.debug("New ECF address set: " + str(self.new_ecf_address is not None))
+        return self.new_ecf_address is not None
 
     # Change the requirements of the Device Runtime
     def change_requirements(self, new_requirements: Scheduling):
+
         if self.requirements == new_requirements:
+
             self.logger.error("New requirements are the same as the current ones")
             return False
+        
         elif self.requirements is None:
+
             self.logger.error("Requirements are None")
             return False
+        
         else:
+
             self.logger.debug("Changing requirements")
             self.new_requirements = new_requirements
             self.requirements_changed = True

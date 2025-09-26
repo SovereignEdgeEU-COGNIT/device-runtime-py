@@ -10,16 +10,22 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-      "FLAVOUR": "EnergyV2",
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "EnergyTorch",
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 REQS_NEW = {
-      "FLAVOUR": "NatureV2",
-      "MAX_FUNCTION_EXECUTION_TIME": 3.0,
-      "MAX_LATENCY": 45,
-      "MIN_ENERGY_RENEWABLE_USAGE": 75,
-      "GEOLOCATION": "IKERLAN ARRASATE/MONDRAGON 20500"
+    "FLAVOUR": "NatureFR",
+    "MAX_FUNCTION_EXECUTION_TIME": 3.0,
+    "MAX_LATENCY": 45,
+    "MIN_ENERGY_RENEWABLE_USAGE": 75,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 @pytest.fixture   
@@ -159,12 +165,12 @@ def test_device_runtime_call_async(test_func: callable, dummy_callback: callable
     assert device_runtime.sm_thread is not None
 
     # Offload and execute a function
-    was_called = device_runtime.call_async(test_func, dummy_callback, 2, 3)
+    was_enqueued = device_runtime.call_async(test_func, dummy_callback, 2, 3)
 
     time.sleep(10)
 
     # Assertions
-    assert was_called is True
+    assert was_enqueued is True
     assert callback_executed is True
     assert response_received.res == 6
     assert response_received.ret_code == ExecReturnCode.SUCCESS
