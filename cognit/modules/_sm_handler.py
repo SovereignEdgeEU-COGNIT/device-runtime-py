@@ -49,6 +49,14 @@ class StateMachineHandler():
             # Wait for the next iteration
             time.sleep(interval)
 
+        is_req_id_deleted = self.sm.cfc._app_req_delete()
+        
+        if is_req_id_deleted:
+            self.logger.info("Requirements deleted successfully")
+        else:
+            self.logger.error("Error deleting requirements")
+        
+
     def evaluate_conditions(self):
         """
         Evaluate the conditions of the current state to change to another state

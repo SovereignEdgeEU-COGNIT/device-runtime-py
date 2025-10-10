@@ -174,7 +174,7 @@ class DeviceRuntimeStateMachine(StateMachine):
     # State that waits for user functions offloading
     def on_enter_ready(self):
 
-        if self.timer is not None:
+        if self.timer is None:
 
             self.timer = CallbackTimer(600, self.get_new_ecf_address)
             self.timer.start()
