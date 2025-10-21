@@ -1,4 +1,5 @@
 from enum import Enum
+import string
 from typing import Optional
 from pydantic import BaseModel, Field
 
@@ -7,6 +8,11 @@ class Geolocation(BaseModel):
     longitude: float = Field(..., description="Longitude coordinate")
 
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
+    ID: string = Field(
+        description="Unique identifier of the scheduling requirements")
+    PROVIDER: Optional[str] = Field(
+        default=None,
+        description="Restricts the provider cluster to a specific provider")
     FLAVOUR: str = Field(
         default="Nature",
         description="String describing the flavour of the Runtime. There is oneidentifier per DaaS and FaaS corresponding to the different use cases")
