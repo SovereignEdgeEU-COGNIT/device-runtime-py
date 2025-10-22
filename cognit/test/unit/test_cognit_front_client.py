@@ -58,7 +58,8 @@ TEST_CFE_RESPONSES = {
 }
 
 TEST_REQS_INIT = {
-    "FLAVOUR": "EnergyV2",
+    "ID": "device1",
+    "FLAVOUR": "Energy",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -66,7 +67,8 @@ TEST_REQS_INIT = {
 }
 
 TEST_REQS_INIT_MAX_LATENCY = {
-    "FLAVOUR": "EnergyV2",
+    "ID": "device2",
+    "FLAVOUR": "Energy",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -75,7 +77,8 @@ TEST_REQS_INIT_MAX_LATENCY = {
 }
 
 REQS_NEW = {
-    "FLAVOUR": "EnergyV2",
+    "ID": "device3",
+    "FLAVOUR": "Energy",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -83,11 +86,12 @@ REQS_NEW = {
 }
 
 # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  
-TEST_REQS_WRONG = { 
-      "FLAVOUR": "Energy",
-      "MAX_FUNCTION_EXECUTION_TIME": 2.0,
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
+TEST_REQS_WRONG = {
+    "ID": "device4",
+    "FLAVOUR": "Energy",
+    "MAX_FUNCTION_EXECUTION_TIME": 2.0,
+    "MAX_LATENCY": 25,
+    "MIN_ENERGY_RENEWABLE_USAGE": 85,
 }
 
 @pytest.fixture
