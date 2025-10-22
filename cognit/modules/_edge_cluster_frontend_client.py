@@ -1,4 +1,4 @@
-from cognit.models._edge_cluster_frontend_client import ExecResponse, ExecutionMode
+from cognit.models._edge_cluster_frontend_client import ExecResponse, ExecutionMode, ExecReturnCode
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
 import requests as req
@@ -66,11 +66,19 @@ class EdgeClusterFrontendClient:
         # Send request
         try:
             try:
+
                 response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), timeout=timeout)
+
             except req.exceptions.SSLError as e:
+
                 if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-                    raise e
+                    
+                    self.logger.error(f"Error during execution: {e}")
+                    self.set_has_connection(False)
+                    return ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
+                
                 self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+
                 # Send request with verify=False because the uri uses a self-signed certificate
                 response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
             
@@ -88,9 +96,10 @@ class EdgeClusterFrontendClient:
             self.evaluate_response(result)
 
         except req.exceptions.RequestException as e:
+
             self.logger.error(f"Error during execution: {e}")
             self.set_has_connection(False)
-            raise e
+            result = ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
 
         if exec_mode == ExecutionMode.ASYNC:
             # Execute the callback function
@@ -106,12 +115,15 @@ class EdgeClusterFrontendClient:
         Args:
             response (ExecResponse): Response of the request
         """
+
         if response.ret_code == 200:
             self.logger.debug("Function execution success")
             self.set_has_connection(True)
+
         if response.ret_code == 401:
             self.logger.debug("Token not valid, client is unauthorized")
             self.set_has_connection(False)
+
         if response.ret_code == 400:
             self.logger.debug("Bad request. Has the token been added in the header?")
             self.set_has_connection(False)
