@@ -121,7 +121,7 @@ def test_device_runtime_update_requirements():
     assert has_update is True
     assert device_runtime.sm_handler is not None
     assert device_runtime.sm_thread is not None
-    assert device_runtime.current_reqs == REQS_NEW
+    assert device_runtime.current_reqs == Scheduling(**REQS_NEW)
 
     # Stop Device Runtime
     has_stop = device_runtime.stop()
