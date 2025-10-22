@@ -1,7 +1,6 @@
-from enum import Enum
-import string
-from typing import Optional
 from pydantic import BaseModel, Field
+from typing import Optional
+from enum import Enum
 
 class Geolocation(BaseModel):
     latitude: float = Field(..., description="Latitude coordinate")
