@@ -22,7 +22,11 @@ TEST_CFE_RESPONSES = {
         "status_code": 200,
         "body": {
             "ID": "device1",
-            "FLAVOUR": "smart_city"
+            "FLAVOUR": "smart_city",
+            "GEOLOCATION": {
+                "latitude": 43.05,
+                "longitude": -2.53
+            }
         }
     },
     "req_read_error": {

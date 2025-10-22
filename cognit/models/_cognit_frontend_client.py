@@ -9,9 +9,9 @@ class Geolocation(BaseModel):
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     ID: str = Field(
         description="Unique identifier of the scheduling requirements")
-    PROVIDER: Optional[str] = Field(
+    PROVIDER: Optional[list[str]] = Field(
         default=None,
-        description="Restricts the provider cluster to a specific provider")
+        description="Restricts the provider cluster to specific providers")
     FLAVOUR: str = Field(
         default="Nature",
         description="String describing the flavour of the Runtime. There is oneidentifier per DaaS and FaaS corresponding to the different use cases")
@@ -25,7 +25,6 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
         default=None,
         description="Minimum energy renewable percentage")
     GEOLOCATION: Geolocation = Field(
-        default=None,
         description="Geolocation info with latitude and longitude.")
     
 class FunctionLanguage(str, Enum):
