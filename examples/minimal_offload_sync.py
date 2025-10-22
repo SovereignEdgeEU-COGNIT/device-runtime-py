@@ -10,6 +10,11 @@ from cognit import device_runtime
 def suma(a: int, b: int):
     return a + b
 
+def delayed_suma(a: int, b: int):
+    import time
+    time.sleep(50)
+    return a + b
+
 def mult(a: int, b: int):
     return a * b
 
@@ -41,6 +46,7 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
+    "ID": "device1",
     "FLAVOUR": "SmartCity",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -49,6 +55,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
+    "ID": "device1",
     "FLAVOUR": "Nature",
     "MAX_FUNCTION_EXECUTION_TIME": 15.0,
     "MAX_LATENCY": 45,
@@ -60,6 +67,7 @@ REQS_NEW = {
 }
 
 REQS_ML = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "MAX_FUNCTION_EXECUTION_TIME": 15.0,
     "MAX_LATENCY": 45,
@@ -87,6 +95,13 @@ try:
 
     print("-----------------------------------------------")
     print("Sum sync result: " + str(result))
+    print("-----------------------------------------------")
+
+    # Synchronize offload but timeout after 10 seconds
+    result = my_device_runtime.call(delayed_suma, 50, 25, timeout=10)
+
+    print("-----------------------------------------------")
+    print("Sum sync with timeout result: " + str(result))
     print("-----------------------------------------------")
 
     # Update the requirements
