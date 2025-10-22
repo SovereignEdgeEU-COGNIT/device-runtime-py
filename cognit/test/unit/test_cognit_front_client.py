@@ -21,6 +21,7 @@ TEST_CFE_RESPONSES = {
     "req_read_ok": {
         "status_code": 200,
         "body": {
+            "ID": "device1",
             "FLAVOUR": "smart_city"
         }
     },
