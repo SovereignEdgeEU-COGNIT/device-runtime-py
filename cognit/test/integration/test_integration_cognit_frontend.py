@@ -23,7 +23,7 @@ TEST_REQS_INIT = {
 }
 
 REQS_NEW = {
-    "ID": "device2",
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -33,7 +33,7 @@ REQS_NEW = {
 
 # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  
 TEST_REQS_WRONG = {
-    "ID": "device3",
+    "ID": "device1",
     "FLAVOUR": "Energy",
     "MAX_FUNCTION_EXECUTION_TIME": 2.0,
     "MAX_LATENCY": 25,

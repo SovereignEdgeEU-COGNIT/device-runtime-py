@@ -18,7 +18,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
-    "ID": "device2",
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "MAX_LATENCY": 45,  # New requirement added
     "GEOLOCATION": {
@@ -28,7 +28,7 @@ REQS_NEW = {
 }
 
 BAD_REQS = {
-    "ID": "device3",
+    "ID": "device1",
     "FLAVOUR": "WrongFlavour"  
 }
 

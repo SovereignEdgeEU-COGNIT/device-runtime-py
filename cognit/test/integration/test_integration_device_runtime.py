@@ -19,7 +19,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
-    "ID": "device2",
+    "ID": "device1",
     "FLAVOUR": "NatureFR",
     "MAX_FUNCTION_EXECUTION_TIME": 3.0,
     "MAX_LATENCY": 45,
