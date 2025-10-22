@@ -101,6 +101,18 @@ class EdgeClusterFrontendClient:
             self.set_has_connection(False)
             result = ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
 
+        except req.exceptions.ConnectionError as e:
+            
+            self.logger.error(f"Connection error in getting Edge Cluster Frontend Engine addresses: {e}")
+            self.set_has_connection(False)
+            return ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error in getting Edge Cluster Frontend Engine addresses: {e}")
+            self.set_has_connection(False)
+            return ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e)) 
+
         if exec_mode == ExecutionMode.ASYNC:
             # Execute the callback function
             callback(result)
