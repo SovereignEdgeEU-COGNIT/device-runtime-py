@@ -8,7 +8,7 @@ class Geolocation(BaseModel):
     longitude: float = Field(..., description="Longitude coordinate")
 
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
-    ID: string = Field(
+    ID: str = Field(
         description="Unique identifier of the scheduling requirements")
     PROVIDER: Optional[str] = Field(
         default=None,
