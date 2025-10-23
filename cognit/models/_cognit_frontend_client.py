@@ -11,7 +11,7 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
         description="Unique identifier of the scheduling requirements")
     IS_CONFIDENTIAL: Optional[bool] = Field(
         default=False,
-        description="Indicates if the scheduling requirements are confidential")
+        description="Indicates if the following function offloading requires Confidential Computing")
     PROVIDERS: Optional[list[str]] = Field(
         default=None,
         description="Restricts the provider cluster to specific providers")
