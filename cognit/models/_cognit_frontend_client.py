@@ -9,6 +9,9 @@ class Geolocation(BaseModel):
 class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
     ID: str = Field(
         description="Unique identifier of the scheduling requirements")
+    IS_CONFIDENTIAL: Optional[bool] = Field(
+        default=False,
+        description="Indicates if the scheduling requirements are confidential")
     PROVIDERS: Optional[list[str]] = Field(
         default=None,
         description="Restricts the provider cluster to specific providers")
