@@ -16,7 +16,6 @@ class Scheduling(BaseModel): # Called 'class AppRequirements' in dann1 code
         default=None,
         description="Restricts the provider cluster to specific providers")
     FLAVOUR: str = Field(
-        default="Nature",
         description="String describing the flavour of the Runtime. There is oneidentifier per DaaS and FaaS corresponding to the different use cases")
     MAX_LATENCY: Optional[int] = Field(
         default=None,
