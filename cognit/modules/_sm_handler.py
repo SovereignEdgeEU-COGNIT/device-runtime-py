@@ -37,6 +37,11 @@ class StateMachineHandler():
         Stop the Device Runtime
         """
 
+        if self.sm.timer is not None:
+            
+            self.sm.timer.stop()
+            self.sm.timer = None
+
         self.running = False
     
     def run(self, interval=0.05):
