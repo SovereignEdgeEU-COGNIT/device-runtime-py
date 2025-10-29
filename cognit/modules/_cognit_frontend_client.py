@@ -110,6 +110,7 @@ class CognitFrontendClient:
         except Exception as e:
             
             self.logger.error(f"Error in app requirements creation: {e}")
+            self.set_has_connection(False)
             return False
         
         if not self.app_req_id:
