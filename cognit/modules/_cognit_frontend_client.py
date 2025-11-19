@@ -91,7 +91,7 @@ class CognitFrontendClient:
                 uri = f'{self.endpoint}/v1/app_requirements'
 
                 self.logger.debug(f"Application requirements do not exist, creating them at {uri}")
-                response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True))
+                response = req.post(uri, headers=header, data=reqs.json(exclude_unset=True), timeout=10)
 
                 self.app_req_id = response.json()
 
@@ -99,14 +99,22 @@ class CognitFrontendClient:
 
                 uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
                 self.logger.debug(f"Application requirements already exist, updating them at {uri}")
-                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))   
+                response = req.put(uri, headers=header, data=reqs.json(exclude_unset=True))
+
+        except req.exceptions.Timeout as e:
+
+            self.logger.error(f"Timeout error in app requirements creation: {e}. Is the server reachable?")
+            self.set_has_connection(False)
+            return False   
 
         except Exception as e:
             
             self.logger.error(f"Error in app requirements creation: {e}")
+            self.set_has_connection(False)
             return False
         
         if not self.app_req_id:
+
             self.logger.error("Application ID could not be retrieved from the response")
             return False
         
@@ -130,13 +138,19 @@ class CognitFrontendClient:
 
         try:
 
-            response = req.get(uri, headers=headers)
+            response = req.get(uri, headers=headers, timeout=10)
 
-        except req.exceptions.RequestException as e:
-
-            self.logger.error(f"Error in getting Edge Cluster Frontend Engine addresses: {e}")
+        except req.exceptions.Timeout as e:
+            
+            self.logger.error(f"Timeout error in getting Edge Cluster Frontend Engine addresses: {e}. Is the server reachable?")
             self.set_has_connection(False)
             return None
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error in getting Edge Cluster Frontend Engine addresses: {e}")
+            self.set_has_connection(False)
+            return None 
 
         self.set_has_connection(response.status_code < 400)
 
@@ -242,17 +256,26 @@ class CognitFrontendClient:
 
         # Authenticate using HTTPBasicAuth if username and password are provided
         try:
-            response = req.post(url=uri, auth=HTTPBasicAuth(self.config._cognit_frontend_engine_usr, self.config.cognit_frontend_engine_cfe_pwd))
+
+            response = req.post(url=uri, auth=HTTPBasicAuth(self.config._cognit_frontend_engine_usr, self.config.cognit_frontend_engine_cfe_pwd), timeout=10)
 
             if response.status_code not in [200, 201]:
+
                 self.logger.critical(f"Token creation failed with status code: {response.status_code}")
                 self._inspect_response(response, "_authenticate.error")
                 return None
             
-        except req.exceptions.RequestException as e:
-            self.logger.critical(f"Token creation failed with exception: {e}")
+        except req.exceptions.Timeout as e:
+
+            self.logger.error(f"Timeout error when authenticating: {e}. Is the server reachable?")
             self.set_has_connection(False)
             return None
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error when authenticating: {e}")
+            self.set_has_connection(False)
+            return None 
         
         self.token = response.json()
 
@@ -274,7 +297,22 @@ class CognitFrontendClient:
 
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
         headers = {"token": self.token}
-        response = req.get(uri, headers=headers)
+
+        try:
+
+            response = req.get(uri, headers=headers, timeout=10)
+        
+        except req.exceptions.Timeout as e:
+            
+            self.logger.error(f"Timeout error when getting app requirements: {e}. Is the server reachable?")
+            self.set_has_connection(False)
+            return None
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error when getting app requirements: {e}")
+            self.set_has_connection(False)
+            return None 
         
         if response.status_code != 200: # something went wrong
 
@@ -283,9 +321,14 @@ class CognitFrontendClient:
             return None
         
         self.set_has_connection(response.status_code < 400)
+
         try:
+
             response = pydantic.parse_obj_as(Scheduling, response.json())
+
         except pydantic.ValidationError as e:
+
+            self.logger.error(f"Validation error in getting app requirements: {e}")
             self.logger.error(e)
         
         return response
@@ -304,8 +347,24 @@ class CognitFrontendClient:
         uri = f'{self.endpoint}/v1/app_requirements/{self.app_req_id}'
         headers = {"token": self.token}
 
-        response = req.delete(uri, headers=headers)
+        try:
+
+            response = req.delete(uri, headers=headers)
+
+        except req.exceptions.Timeout as e:
+            
+            self.logger.error(f"Timeout error when deleting app requirements: {e}. Is the server reachable?")
+            self.set_has_connection(False)
+            return False
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error when deleting app requirements: {e}")
+            self.set_has_connection(False)
+            return False 
+
         if response.status_code >= 300:
+
             self.logger.warning(f"App req delete returned {response.status_code} with body: {response.json()}")
         
         self.set_has_connection(response.status_code < 400)
@@ -330,6 +389,7 @@ class CognitFrontendClient:
 
         # Check if the function is already uploaded
         if self.is_function_uploaded(function_hash):
+
             self.logger.debug("Function already in local HASH map")
             return self.offloaded_funs_hash_map[function_hash]
         
@@ -370,7 +430,21 @@ class CognitFrontendClient:
         header = self.get_header(self.token)
 
         # Send data to DaaS
-        response = req.post(uri, headers=header, data=data.json())
+        try:
+
+            response = req.post(uri, headers=header, data=data.json(), timeout=30)
+
+        except req.exceptions.Timeout as e:
+            
+            self.logger.error(f"Timeout error when uploading function: {e}. Is the server reachable?")
+            self.set_has_connection(False)
+            return None
+
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error when uploading function: {e}")
+            self.set_has_connection(False)
+            return None 
 
         if response.status_code != 200:
             self._inspect_response(response)
@@ -379,35 +453,7 @@ class CognitFrontendClient:
         # Get function ID
         function_id = response.json()
         return function_id
-    
-    def _send_latency_measurements(self, latencies: str) -> bool:
-        """
-        Sends the latencies to the Cognit Frontend Engine
-        
-        Args:
-            latencies: String containing the latencies in JSON format
 
-        Returns:
-            True if the request was successful, False otherwise
-        """
-    
-        uri = f'{self.endpoint}/v1/latency'
-        header = self.get_header(self.token)
-
-        try:
-
-            response = req.post(uri, headers=header, json=json.loads(latencies))
-
-            if response.status_code != 200:
-                self._inspect_response(response, "_send_latency_measurements.error")
-                return False
-            
-            return True
-        
-        except req.exceptions.RequestException as e:
-            self.logger.error(f"Error in sending latencies: {e}")
-            return False
-    
     def _inspect_response(self, response: req.Response, requestFun: str = ""):
         """
         Prints response of a request. For debugging purpouses only 
@@ -416,8 +462,11 @@ class CognitFrontendClient:
             response: Response object of the request
             requestFun: String containing the name of the request
         """
+
         self.logger.error(f"[{requestFun}] Response Code: {response.status_code}")
+
         if response.status_code != 204:
+
             try:
                 self.logger.error(f"[{requestFun}] Response Body: {response.json()}")
             except json.JSONDecodeError:

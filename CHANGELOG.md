@@ -6,10 +6,14 @@
 
 ### Additions, changes and fixes
 
-- Latency mechanisms to select the faster Edge Cluster Frontend if MAX_LATENCY parameter is provided in requirements
+- Latency mechanisms to select the faster Edge Cluster Frontend if MAX_LATENCY parameter is provided in requirements.
 - Requirement parameter GEOLOCATION is now mandatory and made up of a latitud and longitude value.
-- Fix: CallQueue and SyncResultQueue are no longer Singletons
-- Examples: MinIO service usage within a offloaded function
+- Added IS_CONFIDENTIAL, ID, PROVIDERS requirements.
+- App requirements DELETE HTTP request is sent when stopping the Device Runtime.
+- When a function is offloading internet connection is monitorised. If connection is lost, an ExecResponse error will be given as result.
+- Fix: Returning ExecResponse error if timeout happens.
+- Fix: CallQueue and SyncResultQueue are no longer Singletons.
+- Examples: MinIO service usage within a offloaded function.
 - Improved documentation
 
 ## [release-cognit-3.0]

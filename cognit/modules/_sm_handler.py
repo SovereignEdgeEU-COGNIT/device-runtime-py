@@ -37,6 +37,11 @@ class StateMachineHandler():
         Stop the Device Runtime
         """
 
+        if self.sm.timer is not None:
+            
+            self.sm.timer.stop()
+            self.sm.timer = None
+
         self.running = False
     
     def run(self, interval=0.05):
@@ -48,6 +53,14 @@ class StateMachineHandler():
             self.evaluate_conditions()
             # Wait for the next iteration
             time.sleep(interval)
+
+        is_req_id_deleted = self.sm.cfc._app_req_delete()
+        
+        if is_req_id_deleted:
+            self.logger.info("Requirements deleted successfully")
+        else:
+            self.logger.error("Error deleting requirements")
+        
 
     def evaluate_conditions(self):
         """

@@ -1,14 +1,26 @@
-from cognit.models._edge_cluster_frontend_client import ExecResponse, ExecutionMode
+from cognit.models._edge_cluster_frontend_client import ExecResponse, ExecutionMode, ExecReturnCode
 from cognit.modules._faas_parser import FaasParser
 from cognit.modules._logger import CognitLogger
 import requests as req
+import threading
 import pydantic
+import socket
 import json
+import time
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import logging
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+def is_online(host="8.8.8.8", port=53, timeout=3) -> bool:
+    """Simple check for Internet connectivity."""
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        return True
+    except socket.error:
+        return False
 
 class EdgeClusterFrontendClient:
 
@@ -52,52 +64,87 @@ class EdgeClusterFrontendClient:
             None | ExecResponse: If the execution mode is ASYNC, the function returns None. If the execution mode is SYNC, the function returns an ExecResponse object.
         """
 
-        # Create request
         self.logger.debug(f"Execute function with ID {func_id}")
         uri = f"{self.address}/v1/functions/{func_id}/execute"
 
-        # Header
         header = self.get_header(self.token)
-        # Query parameters
-        qparams = self.get_qparams(app_req_id, ExecutionMode.SYNC) # Temporaly set to SYNC in order to get the response
-        # Encoded parameters
+        qparams = self.get_qparams(app_req_id, ExecutionMode.SYNC)
         serialized_params = self.get_serialized_params(params_tuple)
 
-        # Send request
-        try:
+        def do_post(result_container: dict):
+            """Worker function to execute POST."""
             try:
-                response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), timeout=timeout)
-            except req.exceptions.SSLError as e:
-                if "CERTIFICATE_VERIFY_FAILED" not in str(e):
-                    raise e
-                self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
-                # Send request with verify=False because the uri uses a self-signed certificate
-                response = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False, timeout=timeout)
-            
-            # Check if the response is successful
-            response.raise_for_status() 
-            response_data = response.json()
+                try:
 
-            # Parse the response to an ExecResponse model
-            result = pydantic.parse_obj_as(ExecResponse, response_data)
-            
-            # Deserialize the response
-            result.res = self.parser.deserialize(result.res)
+                    result_container["response"] = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), timeout=timeout)
 
-            # Evaluate response
-            self.evaluate_response(result)
+                except req.exceptions.SSLError as e:
 
-        except req.exceptions.RequestException as e:
+                    if "CERTIFICATE_VERIFY_FAILED" not in str(e):
+                        self.logger.error(f"SSL error during execution: {e}")
+                        result_container["error"] = e
+
+                    self.logger.info(f"SSL certificate verification failed, retrying with verify=False for URI: {uri}")
+                    result_container["response"] = req.post(uri, headers=header, params=qparams, data=json.dumps(serialized_params), verify=False,timeout=timeout)
+
+            except Exception as e:
+
+                result_container["error"] = e
+
+        # Run request in a background thread if no timeout defined
+        result = {"response": None, "error": None}
+        thread = threading.Thread(target=do_post, args=(result,), daemon=True)
+        thread.start()
+
+        if timeout is None:
+
+            while thread.is_alive():
+
+                if not is_online():
+                    self.logger.error("Network disconnection detected during execution.")
+                    self.set_has_connection(False)
+
+                    return ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err="Network disconnection detected.")
+                
+                time.sleep(3)
+
+            thread.join()
+        else:
+            thread.join()
+
+        # Handle errors
+        if result.get("error"):
+
+            e = result["error"]
             self.logger.error(f"Error during execution: {e}")
             self.set_has_connection(False)
-            raise e
+            return ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
+
+        # Parse response
+        response = result["response"]
+
+        try:
+            response.raise_for_status()
+            response_data = response.json()
+
+            result_obj = pydantic.parse_obj_as(ExecResponse, response_data)
+            result_obj.res = self.parser.deserialize(result_obj.res)
+            self.evaluate_response(result_obj)
+            
+        except Exception as e:
+
+            self.logger.error(f"Unexpected error during function execution: {e}")
+            self.set_has_connection(False)
+            result_obj = ExecResponse(ret_code=ExecReturnCode.ERROR, res=None, err=str(e))
 
         if exec_mode == ExecutionMode.ASYNC:
-            # Execute the callback function
-            callback(result)
+
+            callback(result_obj)
             return None
+        
         else:
-            return result
+
+            return result_obj
     
     def evaluate_response(self, response: ExecResponse): 
         """
@@ -106,12 +153,15 @@ class EdgeClusterFrontendClient:
         Args:
             response (ExecResponse): Response of the request
         """
+
         if response.ret_code == 200:
             self.logger.debug("Function execution success")
             self.set_has_connection(True)
+
         if response.ret_code == 401:
             self.logger.debug("Token not valid, client is unauthorized")
             self.set_has_connection(False)
+
         if response.ret_code == 400:
             self.logger.debug("Bad request. Has the token been added in the header?")
             self.set_has_connection(False)
