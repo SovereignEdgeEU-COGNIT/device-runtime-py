@@ -10,6 +10,11 @@ from cognit import device_runtime
 def suma(a: int, b: int):
     return a + b
 
+def delayed_sum(a: int, b: int):
+    import time
+    time.sleep(50)
+    return a + b
+
 def mult(a: int, b: int):
     return a * b
 
@@ -41,7 +46,8 @@ def ml_workload(x: int, y: int):
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
-    "FLAVOUR": "SmartCity",
+    "ID": "device1",
+    "FLAVOUR": "Energy",
     "GEOLOCATION": {
         "latitude": 43.05,
         "longitude": -2.53
@@ -49,6 +55,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
+    "ID": "device1",
     "FLAVOUR": "Nature",
     "MAX_FUNCTION_EXECUTION_TIME": 15.0,
     "MAX_LATENCY": 45,
@@ -60,6 +67,7 @@ REQS_NEW = {
 }
 
 REQS_ML = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "MAX_FUNCTION_EXECUTION_TIME": 15.0,
     "MAX_LATENCY": 45,
@@ -89,6 +97,13 @@ try:
     print("Sum sync result: " + str(result))
     print("-----------------------------------------------")
 
+    # Synchronize offload but timeout after 10 seconds
+    result = my_device_runtime.call(delayed_sum, 50, 25, timeout=10)
+
+    print("-----------------------------------------------")
+    print("Sum sync with timeout result: " + str(result))
+    print("-----------------------------------------------")
+
     # Update the requirements
     are_updated = my_device_runtime.update_requirements(REQS_NEW)
 
@@ -100,7 +115,7 @@ try:
 
         print("Requirements: "+ str(REQS_NEW) + "NOT UPDATED!")
 
-    # Offload asyncronously a function
+    # Offload asynchronously a function
     my_device_runtime.call_async(suma, get_result, 100, 10)
 
     # Offload and execute a function
@@ -153,5 +168,5 @@ try:
 
 except Exception as e:
     
-    print("An exception has occured: " + str(e))
+    print("An exception has occurred: " + str(e))
     exit(-1)

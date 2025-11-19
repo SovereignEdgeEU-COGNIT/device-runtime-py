@@ -11,6 +11,7 @@ import time
 COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 TEST_REQS = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,

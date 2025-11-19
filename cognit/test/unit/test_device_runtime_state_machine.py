@@ -15,6 +15,7 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
+    "ID": "device1",
     "FLAVOUR": "EnergyV2",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -23,6 +24,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
+    "ID": "device1",
     "FLAVOUR": "NatureV2",
     "MAX_FUNCTION_EXECUTION_TIME": 3.0,
     "MAX_LATENCY": 45,

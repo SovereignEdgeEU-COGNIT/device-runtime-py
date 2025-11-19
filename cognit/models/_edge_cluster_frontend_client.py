@@ -30,16 +30,7 @@ class ExecResponse(BaseModel):
         default=None,
         description="Offloaded function execution error description",
     )
-class AsyncExecStatus(Enum):
-    WORKING = "WORKING"
-    READY = "READY"
-    FAILED = "FAILED"
-class AsyncExecId(BaseModel):
-    faas_task_uuid: str
-class AsyncExecResponse(BaseModel):
-    status: AsyncExecStatus = AsyncExecStatus.WORKING
-    res: Optional[ExecResponse]
-    exec_id: AsyncExecId = AsyncExecId(faas_task_uuid="000-000-000")
+    
 class Execution(BaseModel):
     app_reqs_id: int = Field(
         description="Application Requirement document ID")

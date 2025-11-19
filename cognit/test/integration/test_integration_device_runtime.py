@@ -10,6 +10,7 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 
 # Execution requirements, dependencies and policies
 REQS_INIT = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -18,6 +19,7 @@ REQS_INIT = {
 }
 
 REQS_NEW = {
+    "ID": "device1",
     "FLAVOUR": "NatureFR",
     "MAX_FUNCTION_EXECUTION_TIME": 3.0,
     "MAX_LATENCY": 45,
@@ -119,7 +121,7 @@ def test_device_runtime_update_requirements():
     assert has_update is True
     assert device_runtime.sm_handler is not None
     assert device_runtime.sm_thread is not None
-    assert device_runtime.current_reqs == REQS_NEW
+    assert device_runtime.current_reqs == Scheduling(**REQS_NEW)
 
     # Stop Device Runtime
     has_stop = device_runtime.stop()

@@ -14,6 +14,7 @@ COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2.yml"
 BAD_COGNIT_CONFIG_PATH = "cognit/test/config/cognit_v2_wrong_user.yml"
 
 TEST_REQS_INIT = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -22,6 +23,7 @@ TEST_REQS_INIT = {
 }
 
 REQS_NEW = {
+    "ID": "device1",
     "FLAVOUR": "EnergyTorch",
     "GEOLOCATION": {
         "latitude": 43.05,
@@ -30,11 +32,16 @@ REQS_NEW = {
 }
 
 # Wrong because "GEOLOCATION" is not defined when "MAX_LATENCY" is defined  
-TEST_REQS_WRONG = { 
-      "FLAVOUR": "Energy",
-      "MAX_FUNCTION_EXECUTION_TIME": 2.0,
-      "MAX_LATENCY": 25,
-      "MIN_ENERGY_RENEWABLE_USAGE": 85,
+TEST_REQS_WRONG = {
+    "ID": "device1",
+    "FLAVOUR": "Energy",
+    "MAX_FUNCTION_EXECUTION_TIME": 2.0,
+    "MAX_LATENCY": 25,
+    "MIN_ENERGY_RENEWABLE_USAGE": 85,
+    "GEOLOCATION": {
+        "latitude": 43.05,
+        "longitude": -2.53
+    }
 }
 
 @pytest.fixture
@@ -109,8 +116,7 @@ def test_cognit_frontend_bad_init(cognit_config: CognitConfig):
     assert token is not None
 
     # Requirements
-    reqs = Scheduling(**TEST_REQS_WRONG)
-    has_initiated = cfc.init(reqs)
+    has_initiated = cfc.init(TEST_REQS_WRONG) # TEST_REQS_WRONG is not a Scheduling instance
 
     # Check CFC uploaded the requirements correctly
     assert has_initiated is False
