@@ -64,7 +64,7 @@ class DeviceRuntimeStateMachine(StateMachine):
     token_not_valid_ready = ready.to(init, unless=["is_cfc_connected"])
     token_not_valid_ready_2 = ready.to(init, unless=["is_ecf_connected"])
     # 4.3 The requirements have changed, therefore, the requirements are uploaded again
-    ready_update_requirements = ready.to(send_init_request, cond=["is_cfc_connected", "is_ecf_connected", "have_requirements_changed"])
+    ready_update_requirements = ready.to(send_init_request, cond=["is_cfc_connected", "is_ecf_connected", "have_requirements_changed"], unless=["is_new_ecf_address_set"])
     # 4.4 Connect to the Edge Cluster Frontend Client if the address has changed
     ready_update_ecf_address = ready.to(get_ecf_address, cond=["is_cfc_connected", "is_ecf_connected", "is_new_ecf_address_set"], unless=["have_requirements_changed"])
   
