@@ -67,12 +67,6 @@ class LatencyCalculator:
                     continue
 
                 latency_by_cluster[cluster_ip] = latency
-
-        # Return lowest latency cluster as JSON string
-        if not latency_by_cluster:
-
-            self.logger.error("No valid edge clusters found.")
-            return {"error": "No valid edge clusters found."}
         
         return latency_by_cluster
 
