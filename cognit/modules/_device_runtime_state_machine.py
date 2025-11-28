@@ -8,6 +8,7 @@ from cognit.modules._logger import CognitLogger
 from cognit.models._device_runtime import Call
 from statemachine import StateMachine, State
 
+from threading import Event
 import sys
 
 sys.path.append(".")
@@ -97,6 +98,7 @@ class DeviceRuntimeStateMachine(StateMachine):
         self.call_queue = call_queue
         self.sync_results_queue = sync_result_queue
 
+        self.update_ecf_address_event = Event()
         super().__init__()
 
     # Get credentials by instantiating a CognitFrontendClient and authenticates to the Cognit Frontend  
@@ -174,7 +176,7 @@ class DeviceRuntimeStateMachine(StateMachine):
     # State that waits for user functions offloading
     def on_enter_ready(self):
 
-        if self.timer is not None:
+        if self.timer is None:
 
             self.timer = CallbackTimer(600, self.get_new_ecf_address)
             self.timer.start()
@@ -222,11 +224,7 @@ class DeviceRuntimeStateMachine(StateMachine):
         """
         Get the new Edge Cluster Frontend address from the CFC.
         """
-        self.new_ecf_address = self.cfc._get_edge_cluster_address()
-
-        if self.new_ecf_address == self.ecc_address:
-            self.logger.debug("New ECF address is the same as the current one")
-            self.new_ecf_address = None
+        self.update_ecf_address_event.set()
                          
     # Checks if CF client has connection with the CF
     def is_cfc_connected(self):

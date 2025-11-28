@@ -79,6 +79,17 @@ class StateMachineHandler():
         """
         Handle the ready state
         """
+        if self.sm.update_ecf_address_event.is_set():
+
+            self.logger.info("Updating ECF address...")
+            self.sm.new_ecf_address = self.sm.cfc._get_edge_cluster_address()
+
+            if self.sm.new_ecf_address == self.sm.ecc_address:
+                self.logger.info("New ECF address is the same as the current one. No update needed.")
+                self.sm.new_ecf_address = None
+
+            self.sm.update_ecf_address_event.clear() 
+
         if not self.sm.is_cfc_connected():
             self.sm.token_not_valid_ready()
         elif not self.sm.is_ecf_connected():

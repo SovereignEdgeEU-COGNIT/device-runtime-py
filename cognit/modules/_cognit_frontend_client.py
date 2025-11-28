@@ -221,7 +221,6 @@ class CognitFrontendClient:
         if self.is_max_latency_activated:
 
             self.logger.debug("Max latency is activated, calculating latency for Edge Cluster Frontend Engines")
-            # Calculate latency for each Edge Cluster Frontend Engine
             cluster_latencies = self.latency_calculator.get_latency_for_clusters(self.available_ecfs)
 
             if not cluster_latencies:
