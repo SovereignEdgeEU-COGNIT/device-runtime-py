@@ -6,6 +6,9 @@ WORKDIR /cognit
 # Copy repository inside the image
 COPY . .
 
+# Install ping to calculate latency
+RUN apt update -y && apt install iputils-ping -y
+
 # Install dependencies with no cache and build/install package directly to avoid leftover artifacts
 RUN pip install --upgrade --no-cache-dir pip setuptools wheel \
     && pip install --no-cache-dir -r requirements.txt \
